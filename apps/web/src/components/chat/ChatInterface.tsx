@@ -275,8 +275,10 @@ export function ChatInterface({ roleTitle }: { roleTitle: string }) {
             if (socketRef.current) {
               const myId = user?._id;
               const otherId = activeContact._id;
-              const roomId = myId < otherId ? `${myId}_${otherId}` : `${otherId}_${myId}`;
-              socketRef.current.emit('send_message', { roomId, message: msg });
+              if (myId && otherId) {
+                const roomId = myId < otherId ? `${myId}_${otherId}` : `${otherId}_${myId}`;
+                socketRef.current.emit('send_message', { roomId, message: msg });
+              }
             }
           }}
         />
