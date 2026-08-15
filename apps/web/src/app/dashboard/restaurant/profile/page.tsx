@@ -21,6 +21,7 @@ export default function VenueProfilePage() {
     restaurantName: '',
     description: '',
     address: '',
+    city: '',
     contactDetails: '',
     logo: ''
   });
