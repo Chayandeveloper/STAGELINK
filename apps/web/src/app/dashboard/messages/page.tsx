@@ -5,7 +5,7 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { useChatStore } from '@/store/useChatStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import axios from 'axios';
+import api from '@/lib/api';
 
 export default function MessagesPage() {
   const { user, token } = useAuthStore();
@@ -26,9 +26,7 @@ export default function MessagesPage() {
 
       const fetchConversations = async () => {
         try {
-          const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/chat/conversations`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await api.get('/chat/conversations');
           setConversations(res.data);
         } catch (error) {
           console.error('Failed to fetch conversations', error);
@@ -50,9 +48,7 @@ export default function MessagesPage() {
     if (activeConversation && token) {
       const fetchMessages = async () => {
         try {
-          const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/chat/conversations/${activeConversation}/messages`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const res = await api.get(`/chat/conversations/${activeConversation}/messages`);
           setMessages(res.data);
         } catch (error) {
           console.error('Failed to fetch messages', error);
