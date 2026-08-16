@@ -67,7 +67,10 @@ export function ChatInterface({ roleTitle }: { roleTitle: string }) {
         const res = await api.get(`/chat/contacts?city=${selectedCity || ''}`);
         setContacts(res.data);
         if (res.data.length > 0 && !activeContact) {
-          setActiveContact(res.data[0]);
+          // Only auto-select first contact on desktop screens
+          if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+            setActiveContact(res.data[0]);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch contacts', err);

@@ -11,7 +11,10 @@ export function ConversationList({ conversations, userId }: Props) {
   const { activeConversation, setActiveConversation, onlineUsers, typingUsers } = useChatStore();
 
   return (
-    <div className="w-80 border-r border-white/10 bg-black/40 backdrop-blur-xl h-full flex flex-col">
+    <div className={cn(
+      "w-full md:w-80 border-r border-white/10 bg-black/40 backdrop-blur-xl h-full flex flex-col shrink-0",
+      activeConversation ? "hidden md:flex" : "flex"
+    )}>
       <div className="p-4 border-b border-white/10">
         <h2 className="text-xl font-semibold text-white">Messages</h2>
         <input 

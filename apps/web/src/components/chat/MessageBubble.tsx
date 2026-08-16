@@ -28,7 +28,7 @@ export function MessageBubble({ message, isOwnMessage, showAvatar = false }: Pro
       <div className={cn(
         "max-w-[70%] rounded-2xl px-4 py-2.5 relative group shadow-sm",
         isOwnMessage 
-          ? "bg-primary text-white rounded-br-sm" 
+          ? "bg-primary text-primary-foreground rounded-br-sm" 
           : "bg-white/10 backdrop-blur-md text-white rounded-bl-sm border border-white/5"
       )}>
         <p className="text-sm leading-relaxed whitespace-pre-wrap word-break-words">{message.content}</p>
