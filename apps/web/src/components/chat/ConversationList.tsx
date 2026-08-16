@@ -12,7 +12,7 @@ export function ConversationList({ conversations, userId }: Props) {
 
   return (
     <div className={cn(
-      "w-full md:w-80 border-r border-white/10 bg-black/40 backdrop-blur-xl h-full flex flex-col shrink-0",
+      "w-full md:w-80 border-r border-white/10 bg-black/40 backdrop-blur-xl h-full min-h-0 flex flex-col shrink-0",
       activeConversation ? "hidden md:flex" : "flex"
     )}>
       <div className="p-4 border-b border-white/10">

@@ -148,7 +148,7 @@ export function ChatInterface({ roleTitle }: { roleTitle: string }) {
   };
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900/50 relative">
+    <div className="flex h-[calc(100dvh-9.5rem)] md:h-[calc(100dvh-10rem)] border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900/50 relative">
       {/* Contacts List */}
       <div className={`w-full md:w-1/3 border-r border-zinc-800 bg-zinc-950/50 flex-col ${activeContact ? 'hidden md:flex' : 'flex'}`}>
         <div className="p-4 border-b border-zinc-800">
@@ -182,7 +182,7 @@ export function ChatInterface({ roleTitle }: { roleTitle: string }) {
       </div>
 
       {/* Chat Area */}
-      <div className={`flex-1 flex-col bg-zinc-900/20 w-full ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`flex-1 h-full min-h-0 overflow-hidden flex flex-col bg-zinc-900/20 w-full ${!activeContact ? 'hidden md:flex' : 'flex'}`}>
         {/* Chat Header */}
         <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/80">
           <div className="flex items-center space-x-2 sm:space-x-3">
