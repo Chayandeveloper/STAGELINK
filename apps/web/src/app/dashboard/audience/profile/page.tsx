@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save, MapPin } from 'lucide-react';
+import { Loader2, Save, MapPin, MoreHorizontal, Star, Calendar, Users, UserPlus, Settings, LogOut } from 'lucide-react';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -23,8 +24,9 @@ export default function AudienceProfileSetup() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [gender, setGender] = useState('male');
+  const [showMenu, setShowMenu] = useState(false);
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
 
   useEffect(() => {
     fetchProfile();
@@ -87,10 +89,86 @@ export default function AudienceProfileSetup() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800">
-      <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Community Profile</h1>
-        <p className="text-zinc-400">Set up your preferences to find the perfect event buddies.</p>
+    <div className="max-w-2xl mx-auto space-y-8 bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800 relative">
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">Community Profile</h1>
+          <p className="text-zinc-400 text-sm">Set up your preferences to find the perfect event buddies.</p>
+        </div>
+        
+        {/* Instagram Style 3-Dot Options Menu */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors focus:outline-none"
+            title="Options"
+          >
+            <MoreHorizontal size={24} />
+          </button>
+          
+          {showMenu && (
+            <>
+              {/* Overlay backdrop to close the menu when clicking outside */}
+              <div 
+                className="fixed inset-0 z-40 bg-transparent" 
+                onClick={() => setShowMenu(false)}
+              />
+              <div className="absolute right-0 mt-2 w-64 rounded-xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                  Menu
+                </div>
+                <div className="h-px bg-zinc-800 my-1.5" />
+                <div className="space-y-0.5">
+                  <Link 
+                    href="/dashboard/audience/saved"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <Star size={16} className="text-zinc-400" />
+                    <span>Saved Events</span>
+                  </Link>
+                  <Link 
+                    href="/dashboard/audience/reservations"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <Calendar size={16} className="text-zinc-400" />
+                    <span>My Reservations</span>
+                  </Link>
+                  <Link 
+                    href="/dashboard/audience/meetups"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <Users size={16} className="text-zinc-400" />
+                    <span>Meetups</span>
+                  </Link>
+                  <Link 
+                    href="/dashboard/audience/connection-requests"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <UserPlus size={16} className="text-zinc-400" />
+                    <span>Connection Requests</span>
+                  </Link>
+                </div>
+                <div className="h-px bg-zinc-800 my-1.5" />
+                <div className="space-y-0.5">
+                  <button 
+                    onClick={() => {
+                      logout();
+                      window.location.href = '/login';
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+                  >
+                    <LogOut size={16} />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

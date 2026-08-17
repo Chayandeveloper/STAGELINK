@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -61,6 +61,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Venue Profile', href: '/dashboard/restaurant/profile', icon: Store },
   ];
 
+  const audienceBottomNav = [
+    { label: 'Home', href: '/dashboard/audience', icon: Home },
+    { label: 'People Nearby', href: '/dashboard/audience/people-nearby', icon: MapPin },
+    { label: 'Tonight Near Me', href: '/dashboard/audience/events', icon: Music },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
+    { label: 'Profile', href: '/dashboard/audience/profile', icon: UserCircle },
+  ];
+
   let navItems = venueNav;
   if (isPerformer) navItems = performerNav;
   if (isAudience) navItems = audienceNav;
@@ -71,7 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-zinc-950 relative">
       {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
+      {isSidebarOpen && !isAudience && (
         <div 
           className="fixed inset-0 bg-black/60 z-40 lg:hidden" 
           onClick={() => setIsSidebarOpen(false)}
@@ -80,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out border-r border-zinc-800 bg-zinc-900 flex flex-col lg:relative lg:translate-x-0 ${
-        isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        isSidebarOpen && !isAudience ? 'translate-x-0' : '-translate-x-full'
       } lg:bg-zinc-900/50`}>
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-xl font-bold text-white tracking-tight">
@@ -136,21 +144,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 h-full">
+      <main className={`flex-1 flex flex-col min-w-0 h-full ${isAudience ? 'pb-16 lg:pb-0' : ''}`}>
         <div className="lg:hidden p-4 flex items-center border-b border-zinc-800 bg-zinc-950">
-          <button 
-            suppressHydrationWarning={true}
-            className="text-zinc-400 hover:text-white"
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <Menu size={24} />
-          </button>
-          <h1 className="ml-4 font-bold text-lg text-white">{roleTitle}</h1>
+          {!isAudience && (
+            <button 
+              suppressHydrationWarning={true}
+              className="text-zinc-400 hover:text-white"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu size={24} />
+            </button>
+          )}
+          <h1 className={`${!isAudience ? 'ml-4' : ''} font-bold text-lg text-white`}>{roleTitle}</h1>
         </div>
         <div className="p-4 md:p-8 flex-1 overflow-auto">
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation (Instagram Style) */}
+      {isAudience && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md px-4 py-2 pb-3">
+          <div className="flex items-center justify-around h-12">
+            {audienceBottomNav.map((item) => {
+              const Icon = item.icon;
+              const isActive = item.href === '/dashboard/audience'
+                ? pathname === '/dashboard/audience' || 
+                  pathname.startsWith('/dashboard/audience/saved') || 
+                  pathname.startsWith('/dashboard/audience/reservations') || 
+                  pathname.startsWith('/dashboard/audience/connection-requests')
+                : pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              
+              return (
+                <Link key={item.href} href={item.href} className="flex-1 flex flex-col items-center justify-center">
+                  <div className={`flex flex-col items-center gap-1 transition-all duration-200 ${
+                    isActive ? 'text-indigo-400 font-semibold scale-105' : 'text-zinc-400 hover:text-zinc-200'
+                  }`}>
+                    <Icon size={20} className={isActive ? 'text-indigo-400 animate-pulse' : 'text-zinc-400'} />
+                    <span className="text-[10px] tracking-tight">{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
