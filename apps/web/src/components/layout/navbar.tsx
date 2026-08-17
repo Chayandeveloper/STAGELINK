@@ -5,8 +5,9 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLocationStore } from '@/store/useLocationStore';
+import { useChatStore } from '@/store/useChatStore';
 import { useEffect, useState } from 'react';
-import { Calendar, Music, MapPin, UserCircle, LogOut } from 'lucide-react';
+import { Calendar, Music, MapPin, UserCircle, LogOut, UserPlus } from 'lucide-react';
 
 const COMMON_CITIES = [
   'New Delhi',
@@ -27,6 +28,7 @@ export function Navbar() {
   const isDetecting = useLocationStore((state) => state.isDetecting);
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
+  const activeConversation = useChatStore((state) => state.activeConversation);
 
   useEffect(() => {
     setIsMounted(true);
@@ -58,8 +60,10 @@ export function Navbar() {
     }
   ];
 
+  const isChatActiveOnMobile = isMounted && pathname === '/dashboard/messages' && activeConversation;
+
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60">
+    <nav className={`sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60 ${isChatActiveOnMobile ? 'hidden md:block' : ''}`}>
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center space-x-2">
@@ -138,16 +142,16 @@ export function Navbar() {
               <>
                 <Link 
                   href={
-                    user?.role === 'restaurant' ? '/dashboard/restaurant' 
+                    user?.role === 'customer' ? '/dashboard/audience/connection-requests'
+                    : user?.role === 'restaurant' ? '/dashboard/restaurant' 
                     : user?.role === 'performer' ? '/dashboard/performer' 
-                    : user?.role === 'customer' ? '/dashboard/audience' 
                     : user?.role === 'admin' ? '/dashboard/admin' 
                     : '/role-selection'
                   }
                   className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors"
-                  title="Dashboard"
+                  title={user?.role === 'customer' ? 'Connection Requests' : 'Dashboard'}
                 >
-                  <UserCircle size={22} />
+                  {user?.role === 'customer' ? <UserPlus size={22} /> : <UserCircle size={22} />}
                 </Link>
                 <button 
                   onClick={() => { logout(); window.location.href = '/login'; }} 

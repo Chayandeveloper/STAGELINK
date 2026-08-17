@@ -61,8 +61,12 @@ export default function MessagesPage() {
 
   if (!user) return null;
 
-  return (
-    <div className="h-[calc(100dvh-7.5rem)] md:h-[calc(100dvh-4rem)] -m-4 md:-m-8 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center overflow-hidden">
+    const containerHeightClass = activeConversation 
+      ? "h-[100dvh] md:h-[calc(100dvh-4rem)]" 
+      : "h-[calc(100dvh-7.5rem)] md:h-[calc(100dvh-4rem)]";
+
+    return (
+      <div className={`${containerHeightClass} -m-4 md:-m-8 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop')] bg-cover bg-center overflow-hidden`}>
       <div className="flex h-full w-full min-h-0 bg-black/60 backdrop-blur-sm">
         {loading ? (
           <div className="w-full flex items-center justify-center">

@@ -6,11 +6,13 @@ import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useChatStore } from '@/store/useChatStore';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuthStore();
+  const activeConversation = useChatStore((state) => state.activeConversation);
   
   // Detection of role based on user state, fallback to URL for UI purposes
   const isPerformer = user?.role === 'performer' || pathname.includes('/dashboard/performer');
@@ -63,8 +65,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const audienceBottomNav = [
     { label: 'Home', href: '/dashboard/audience', icon: Home },
-    { label: 'People Nearby', href: '/dashboard/audience/people-nearby', icon: MapPin },
-    { label: 'Tonight Near Me', href: '/dashboard/audience/events', icon: Music },
+    { label: 'Local', href: '/dashboard/audience/people-nearby', icon: MapPin },
+    { label: 'Tonight', href: '/dashboard/audience/events', icon: Music },
     { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
     { label: 'Profile', href: '/dashboard/audience/profile', icon: UserCircle },
   ];
@@ -144,9 +146,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col min-w-0 h-full ${isAudience ? 'pb-16 lg:pb-0' : ''}`}>
-        <div className="lg:hidden p-4 flex items-center border-b border-zinc-800 bg-zinc-950">
-          {!isAudience && (
+      <main className={`flex-1 flex flex-col min-w-0 h-full ${isAudience && !(pathname === '/dashboard/messages' && activeConversation) ? 'pb-16 lg:pb-0' : ''}`}>
+        {!isAudience && (
+          <div className="lg:hidden p-4 flex items-center border-b border-zinc-800 bg-zinc-950">
             <button 
               suppressHydrationWarning={true}
               className="text-zinc-400 hover:text-white"
@@ -154,16 +156,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <Menu size={24} />
             </button>
-          )}
-          <h1 className={`${!isAudience ? 'ml-4' : ''} font-bold text-lg text-white`}>{roleTitle}</h1>
-        </div>
+            <h1 className="ml-4 font-bold text-lg text-white">{roleTitle}</h1>
+          </div>
+        )}
         <div className="p-4 md:p-8 flex-1 overflow-auto">
           {children}
         </div>
       </main>
 
       {/* Mobile Bottom Navigation (Instagram Style) */}
-      {isAudience && (
+      {isAudience && !(pathname === '/dashboard/messages' && activeConversation) && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md px-4 py-2 pb-3">
           <div className="flex items-center justify-around h-12">
             {audienceBottomNav.map((item) => {
