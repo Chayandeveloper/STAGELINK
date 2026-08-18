@@ -26,6 +26,35 @@ export function ChatWindow({ userId }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Prevent page scroll on mobile when keyboard opens
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (activeConversation) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalBodyHeight = document.body.style.height;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      const originalHtmlHeight = document.documentElement.style.height;
+
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        document.body.style.overflow = 'hidden';
+        document.body.style.height = '100dvh';
+        document.documentElement.style.overflow = 'hidden';
+        document.documentElement.style.height = '100dvh';
+      }
+
+      return () => {
+        if (isMobile) {
+          document.body.style.overflow = originalBodyOverflow;
+          document.body.style.height = originalBodyHeight;
+          document.documentElement.style.overflow = originalHtmlOverflow;
+          document.documentElement.style.height = originalHtmlHeight;
+        }
+      };
+    }
+  }, [activeConversation]);
+
   const handleProposeMeetup = async () => {
     // Deprecated in favor of BookTableModal
   };
@@ -103,7 +132,7 @@ export function ChatWindow({ userId }: Props) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 lg:px-8 py-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 lg:px-8 py-4">
         <div className="flex flex-col">
           {messages.map((message, index) => {
             const isOwn = message.sender._id === userId;

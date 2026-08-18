@@ -24,7 +24,7 @@ export function ConversationList({ conversations, userId }: Props) {
         />
       </div>
       
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain p-2 space-y-1">
         {conversations.map((conv) => {
           const isActive = activeConversation === conv._id;
           

@@ -13,6 +13,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuthStore();
   const activeConversation = useChatStore((state) => state.activeConversation);
+
+  const isMessagesPage = pathname === '/dashboard/messages';
+  const isChatActiveOnMobile = isMessagesPage && activeConversation;
   
   // Detection of role based on user state, fallback to URL for UI purposes
   const isPerformer = user?.role === 'performer' || pathname.includes('/dashboard/performer');
@@ -79,7 +82,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const roleTitle = isAdmin ? 'Admin Panel' : isPerformer ? 'Artist Hub' : isAudience ? 'Audience' : 'Venue Hub';
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] bg-zinc-950 relative">
+    <div className={`flex bg-zinc-950 relative ${
+      isMessagesPage 
+        ? isChatActiveOnMobile 
+          ? 'h-[100dvh] md:h-[calc(100dvh-4rem)] w-full' 
+          : 'h-[calc(100dvh-4rem)] w-full'
+        : 'min-h-[calc(100vh-4rem)]'
+    }`}>
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && !isAudience && (
         <div 
@@ -146,8 +155,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col min-w-0 h-full ${isAudience && !(pathname === '/dashboard/messages' && activeConversation) ? 'pb-16 lg:pb-0' : ''}`}>
-        {!isAudience && (
+      <main className={`flex-1 flex flex-col min-w-0 h-full ${isAudience && !isChatActiveOnMobile ? 'pb-16 lg:pb-0' : ''}`}>
+        {!isAudience && !isChatActiveOnMobile && (
           <div className="lg:hidden p-4 flex items-center border-b border-zinc-800 bg-zinc-950">
             <button 
               suppressHydrationWarning={true}
@@ -159,7 +168,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <h1 className="ml-4 font-bold text-lg text-white">{roleTitle}</h1>
           </div>
         )}
-        <div className="p-4 md:p-8 flex-1 overflow-auto">
+        <div className={
+          isMessagesPage
+            ? "flex-1 min-h-0 flex flex-col p-0 overflow-hidden"
+            : "p-4 md:p-8 flex-1 overflow-auto"
+        }>
           {children}
         </div>
       </main>
