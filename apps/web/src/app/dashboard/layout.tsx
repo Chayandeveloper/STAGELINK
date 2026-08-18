@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useChatStore } from '@/store/useChatStore';
 
@@ -13,8 +13,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuthStore();
   const activeConversation = useChatStore((state) => state.activeConversation);
+  const [isMounted, setIsMounted] = useState(false);
 
-  const isMessagesPage = pathname === '/dashboard/messages';
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isMessagesPage = isMounted && pathname === '/dashboard/messages';
   const isChatActiveOnMobile = isMessagesPage && activeConversation;
   
   // Detection of role based on user state, fallback to URL for UI purposes
