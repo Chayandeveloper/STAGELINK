@@ -31,6 +31,18 @@ export function ChatWindow({ userId }: Props) {
     if (typeof window === 'undefined') return;
 
     if (activeConversation) {
+      // Reset window scroll position to 0 to prevent shifted viewport issues (like gaps at the bottom)
+      const resetScroll = () => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        if (document.documentElement) {
+          document.documentElement.scrollTop = 0;
+        }
+      };
+      
+      resetScroll();
+      const scrollTimeout = setTimeout(resetScroll, 50);
+
       const originalBodyOverflow = document.body.style.overflow;
       const originalBodyHeight = document.body.style.height;
       const originalHtmlOverflow = document.documentElement.style.overflow;
@@ -45,6 +57,7 @@ export function ChatWindow({ userId }: Props) {
       }
 
       return () => {
+        clearTimeout(scrollTimeout);
         if (isMobile) {
           document.body.style.overflow = originalBodyOverflow;
           document.body.style.height = originalBodyHeight;
