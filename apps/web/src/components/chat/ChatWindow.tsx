@@ -45,15 +45,19 @@ export function ChatWindow({ userId }: Props) {
 
       const originalBodyOverflow = document.body.style.overflow;
       const originalBodyHeight = document.body.style.height;
+      const originalBodyMinHeight = document.body.style.minHeight;
       const originalHtmlOverflow = document.documentElement.style.overflow;
       const originalHtmlHeight = document.documentElement.style.height;
+      const originalHtmlMinHeight = document.documentElement.style.minHeight;
 
       const isMobile = window.innerWidth < 768;
       if (isMobile) {
         document.body.style.overflow = 'hidden';
         document.body.style.height = '100dvh';
+        document.body.style.minHeight = '100dvh';
         document.documentElement.style.overflow = 'hidden';
         document.documentElement.style.height = '100dvh';
+        document.documentElement.style.minHeight = '100dvh';
       }
 
       return () => {
@@ -61,8 +65,10 @@ export function ChatWindow({ userId }: Props) {
         if (isMobile) {
           document.body.style.overflow = originalBodyOverflow;
           document.body.style.height = originalBodyHeight;
+          document.body.style.minHeight = originalBodyMinHeight;
           document.documentElement.style.overflow = originalHtmlOverflow;
           document.documentElement.style.height = originalHtmlHeight;
+          document.documentElement.style.minHeight = originalHtmlMinHeight;
         }
       };
     }
