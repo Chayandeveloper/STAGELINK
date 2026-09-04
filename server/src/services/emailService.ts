@@ -5,19 +5,22 @@ dotenv.config();
 
 // Create transporter
 const createTransporter = () => {
-  const emailUser = process.env.EMAIL_USER;
-  const emailPass = process.env.EMAIL_PASS;
+  const emailUser = process.env.EMAIL_USER?.trim();
+  const rawPass = process.env.EMAIL_PASS?.trim();
   const emailService = process.env.EMAIL_SERVICE || 'gmail';
 
-  if (!emailUser || !emailPass) {
+  if (!emailUser || !rawPass) {
     return null;
   }
+
+  // Remove any spaces that Google App Passwords often contain (e.g. "xxxx xxxx xxxx xxxx")
+  const cleanPass = rawPass.replace(/\s+/g, '');
 
   return nodemailer.createTransport({
     service: emailService,
     auth: {
       user: emailUser,
-      pass: emailPass,
+      pass: cleanPass,
     },
   });
 };

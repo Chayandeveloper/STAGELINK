@@ -36,7 +36,6 @@ const restaurantLikeCodeSchema = new Schema<IRestaurantLikeCode>({
   timestamps: true
 });
 
-restaurantLikeCodeSchema.index({ code: 1 });
 restaurantLikeCodeSchema.index({ customer: 1, status: 1 });
 restaurantLikeCodeSchema.index({ restaurantUser: 1, createdAt: -1 });
 
