@@ -174,9 +174,54 @@ const getEmailHtml = (title: string, greeting: string, message: string, otp: str
   `;
 };
 
-// Helper to send email via HTTP API (Resend or Brevo) - Bypasses Render free tier SMTP blocks
-const sendViaHttpApi = async (to: string, subject: string, html: string): Promise<boolean> => {
-  // 1. Resend API (resend.com - Free 3,000 emails/mo)
+// Helper to send email via HTTP API (EmailJS, Resend, or Brevo) - Bypasses Render free tier SMTP blocks
+const sendViaHttpApi = async (to: string, subject: string, html: string, otp?: string, name?: string): Promise<boolean> => {
+  // 1. EmailJS (Direct personal Gmail sending via Port 443 - Never blocked on Render!)
+  const emailjsServiceId = process.env.EMAILJS_SERVICE_ID?.trim() || 'service_blw3frg';
+  const emailjsTemplateId = process.env.EMAILJS_TEMPLATE_ID?.trim() || 'template_uwj47my';
+  const emailjsPublicKey = process.env.EMAILJS_PUBLIC_KEY?.trim() || 'dikNrV2u5CVOaxlkA';
+  const emailjsPrivateKey = process.env.EMAILJS_PRIVATE_KEY?.trim() || 'mLum3gzmD9JQLAZbvrCe6';
+
+  if (emailjsServiceId && emailjsTemplateId && emailjsPublicKey) {
+    try {
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service_id: emailjsServiceId,
+          template_id: emailjsTemplateId,
+          user_id: emailjsPublicKey,
+          accessToken: emailjsPrivateKey,
+          template_params: {
+            email: to,
+            to_email: to,
+            passcode: otp || '',
+            otp: otp || '',
+            to_name: name || 'User',
+            name: name || 'User',
+            time: '10 minutes',
+          },
+        }),
+      });
+
+      const resText = await response.text();
+      if (response.ok || resText === 'OK') {
+        console.log(`✅ Email successfully delivered via EmailJS to ${to}`);
+        return true;
+      } else {
+        console.error(`❌ EmailJS API response [${response.status}]:`, resText);
+        if (resText.includes('non-browser')) {
+          console.error('👉 Enable "Allow EmailJS API for non-browser applications" at https://dashboard.emailjs.com/admin/account/security');
+        }
+      }
+    } catch (e: any) {
+      console.error('❌ EmailJS HTTP request failed:', e.message || e);
+    }
+  }
+
+  // 2. Resend API (resend.com - Free 3,000 emails/mo)
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
   if (resendApiKey) {
     try {
@@ -206,35 +251,6 @@ const sendViaHttpApi = async (to: string, subject: string, html: string): Promis
     }
   }
 
-  // 2. Brevo API (brevo.com - Free 300 emails/day)
-  const brevoApiKey = process.env.BREVO_API_KEY?.trim();
-  if (brevoApiKey) {
-    try {
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'api-key': brevoApiKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sender: { email: process.env.EMAIL_USER || 'no-reply@stagelink.com', name: 'StageLink Security' },
-          to: [{ email: to }],
-          subject,
-          htmlContent: html,
-        }),
-      });
-      const data: any = await response.json();
-      if (response.ok) {
-        console.log(`✅ Email successfully delivered via Brevo HTTPS API to ${to}`);
-        return true;
-      } else {
-        console.error('❌ Brevo API error:', data);
-      }
-    } catch (e: any) {
-      console.error('❌ Brevo HTTP request failed:', e.message || e);
-    }
-  }
-
   return false;
 };
 
@@ -252,11 +268,9 @@ export const sendVerificationEmail = async (email: string, name: string, otp: st
   console.log(`🔑 OTP CODE: >>> ${otp} <<<`);
   console.log('======================================================\n');
 
-  // Try HTTP API first (works on Render free tier over Port 443)
-  if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
-    const httpSent = await sendViaHttpApi(email, subject, html);
-    if (httpSent) return true;
-  }
+  // Try HTTP API first (EmailJS / Resend - works on Render free tier over Port 443)
+  const httpSent = await sendViaHttpApi(email, subject, html, otp, name);
+  if (httpSent) return true;
 
   const transporter = getTransporter();
 
@@ -297,11 +311,9 @@ export const sendPasswordResetEmail = async (email: string, name: string, otp: s
   console.log(`🔑 OTP CODE: >>> ${otp} <<<`);
   console.log('======================================================\n');
 
-  // Try HTTP API first
-  if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
-    const httpSent = await sendViaHttpApi(email, subject, html);
-    if (httpSent) return true;
-  }
+  // Try HTTP API first (EmailJS / Resend - works on Render free tier over Port 443)
+  const httpSent = await sendViaHttpApi(email, subject, html, otp, name);
+  if (httpSent) return true;
 
   const transporter = getTransporter();
 
