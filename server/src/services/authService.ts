@@ -63,8 +63,10 @@ export const registerUser = async (
     user = await User.create(userData);
   }
 
-  // Send verification email
-  await sendVerificationEmail(normalizedEmail, user.name, otp);
+  // Send verification email asynchronously so the UI responds immediately
+  sendVerificationEmail(normalizedEmail, user.name, otp).catch((err) => {
+    console.error('❌ Background verification email error:', err);
+  });
 
   return {
     message: 'Verification code sent to your email. Please verify to activate your account.',
@@ -136,7 +138,9 @@ export const resendVerificationOtp = async (email: string) => {
   user.emailOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
 
-  await sendVerificationEmail(normalizedEmail, user.name, otp);
+  sendVerificationEmail(normalizedEmail, user.name, otp).catch((err) => {
+    console.error('❌ Background resend email error:', err);
+  });
 
   return {
     message: 'A fresh verification code has been sent to your email.',
@@ -177,7 +181,9 @@ export const loginUser = async (email: string, password?: string, googleId?: str
     user.emailOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendVerificationEmail(user.email, user.name, otp);
+    sendVerificationEmail(user.email, user.name, otp).catch((err) => {
+      console.error('❌ Background login verification email error:', err);
+    });
 
     const error: any = new Error('Your email is not verified yet. We have sent a verification code to your email.');
     error.status = 403;
@@ -209,7 +215,9 @@ export const forgotPassword = async (email: string) => {
   user.resetPasswordOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
 
-  await sendPasswordResetEmail(normalizedEmail, user.name, otp);
+  sendPasswordResetEmail(normalizedEmail, user.name, otp).catch((err) => {
+    console.error('❌ Background forgot password email error:', err);
+  });
 
   return {
     message: 'Password reset code sent to your email.',

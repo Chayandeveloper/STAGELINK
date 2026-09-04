@@ -3,8 +3,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create transporter
-const createTransporter = () => {
+let cachedTransporter: any = null;
+
+// Create or return pooled transporter
+const getTransporter = () => {
+  if (cachedTransporter) {
+    return cachedTransporter;
+  }
+
   const emailUser = process.env.EMAIL_USER?.trim();
   const rawPass = process.env.EMAIL_PASS?.trim();
   const emailService = process.env.EMAIL_SERVICE || 'gmail';
@@ -16,13 +22,18 @@ const createTransporter = () => {
   // Remove any spaces that Google App Passwords often contain (e.g. "xxxx xxxx xxxx xxxx")
   const cleanPass = rawPass.replace(/\s+/g, '');
 
-  return nodemailer.createTransport({
+  cachedTransporter = nodemailer.createTransport({
     service: emailService,
+    pool: true, // Keep connection alive for fast subsequent sends
+    maxConnections: 3,
+    maxMessages: 100,
     auth: {
       user: emailUser,
       pass: cleanPass,
     },
   });
+
+  return cachedTransporter;
 };
 
 // Generate 6-digit numeric OTP
@@ -165,7 +176,7 @@ const getEmailHtml = (title: string, greeting: string, message: string, otp: str
 
 // Send Email Verification OTP
 export const sendVerificationEmail = async (email: string, name: string, otp: string): Promise<boolean> => {
-  const transporter = createTransporter();
+  const transporter = getTransporter();
   const subject = `Your StageLink Verification Code: ${otp}`;
   const greeting = `Hello, ${name || 'User'}!`;
   const message = 'Thank you for signing up with StageLink. Please use the following One-Time Password (OTP) to verify your email address and activate your account:';
@@ -201,7 +212,7 @@ export const sendVerificationEmail = async (email: string, name: string, otp: st
 
 // Send Password Reset OTP
 export const sendPasswordResetEmail = async (email: string, name: string, otp: string): Promise<boolean> => {
-  const transporter = createTransporter();
+  const transporter = getTransporter();
   const subject = `Your StageLink Password Reset Code: ${otp}`;
   const greeting = `Hello, ${name || 'User'}!`;
   const message = 'We received a request to reset the password for your StageLink account. Use the following One-Time Password (OTP) to complete the reset process:';
