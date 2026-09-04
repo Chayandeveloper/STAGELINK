@@ -174,13 +174,77 @@ const getEmailHtml = (title: string, greeting: string, message: string, otp: str
   `;
 };
 
+// Helper to send email via HTTP API (Resend or Brevo) - Bypasses Render free tier SMTP blocks
+const sendViaHttpApi = async (to: string, subject: string, html: string): Promise<boolean> => {
+  // 1. Resend API (resend.com - Free 3,000 emails/mo)
+  const resendApiKey = process.env.RESEND_API_KEY?.trim();
+  if (resendApiKey) {
+    try {
+      const from = process.env.EMAIL_FROM || 'StageLink <onboarding@resend.dev>';
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          subject,
+          html,
+        }),
+      });
+      const data: any = await response.json();
+      if (response.ok) {
+        console.log(`✅ Email successfully delivered via Resend HTTPS API to ${to} (ID: ${data.id})`);
+        return true;
+      } else {
+        console.error('❌ Resend API error:', data);
+      }
+    } catch (e: any) {
+      console.error('❌ Resend HTTP request failed:', e.message || e);
+    }
+  }
+
+  // 2. Brevo API (brevo.com - Free 300 emails/day)
+  const brevoApiKey = process.env.BREVO_API_KEY?.trim();
+  if (brevoApiKey) {
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoApiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { email: process.env.EMAIL_USER || 'no-reply@stagelink.com', name: 'StageLink Security' },
+          to: [{ email: to }],
+          subject,
+          htmlContent: html,
+        }),
+      });
+      const data: any = await response.json();
+      if (response.ok) {
+        console.log(`✅ Email successfully delivered via Brevo HTTPS API to ${to}`);
+        return true;
+      } else {
+        console.error('❌ Brevo API error:', data);
+      }
+    } catch (e: any) {
+      console.error('❌ Brevo HTTP request failed:', e.message || e);
+    }
+  }
+
+  return false;
+};
+
 // Send Email Verification OTP
 export const sendVerificationEmail = async (email: string, name: string, otp: string): Promise<boolean> => {
-  const transporter = getTransporter();
   const subject = `Your StageLink Verification Code: ${otp}`;
   const greeting = `Hello, ${name || 'User'}!`;
   const message = 'Thank you for signing up with StageLink. Please use the following One-Time Password (OTP) to verify your email address and activate your account:';
   const footerNote = 'If you did not register for a StageLink account, please ignore this email.';
+  const html = getEmailHtml('Verify your StageLink Account', greeting, message, otp, footerNote);
 
   // Always log in terminal for quick development/testing visibility
   console.log('\n======================================================');
@@ -188,8 +252,16 @@ export const sendVerificationEmail = async (email: string, name: string, otp: st
   console.log(`🔑 OTP CODE: >>> ${otp} <<<`);
   console.log('======================================================\n');
 
+  // Try HTTP API first (works on Render free tier over Port 443)
+  if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
+    const httpSent = await sendViaHttpApi(email, subject, html);
+    if (httpSent) return true;
+  }
+
+  const transporter = getTransporter();
+
   if (!transporter) {
-    console.warn('⚠️ EMAIL_USER or EMAIL_PASS not configured in .env. OTP was logged above for development.');
+    console.warn('⚠️ EMAIL_USER/EMAIL_PASS not configured in .env. OTP was logged above for development.');
     return true;
   }
 
@@ -199,32 +271,42 @@ export const sendVerificationEmail = async (email: string, name: string, otp: st
       from: fromAddress,
       to: email,
       subject,
-      html: getEmailHtml('Verify your StageLink Account', greeting, message, otp, footerNote),
+      html,
     });
-    console.log(`✅ Verification email successfully delivered via Gmail to ${email}`);
+    console.log(`✅ Verification email successfully delivered via Gmail SMTP to ${email}`);
     return true;
   } catch (error: any) {
     console.error(`❌ Failed to send verification email to ${email}:`, error?.message || error);
-    // Return true because OTP is still safely logged and stored in DB, allowing user flow to succeed in development
+    if (error?.code === 'ETIMEDOUT' || error?.message?.includes('timeout')) {
+      console.error('👉 NOTE: Render free tier blocks outbound SMTP ports 465/587. Add RESEND_API_KEY to send via HTTPS.');
+    }
     return false;
   }
 };
 
 // Send Password Reset OTP
 export const sendPasswordResetEmail = async (email: string, name: string, otp: string): Promise<boolean> => {
-  const transporter = getTransporter();
   const subject = `Your StageLink Password Reset Code: ${otp}`;
   const greeting = `Hello, ${name || 'User'}!`;
   const message = 'We received a request to reset the password for your StageLink account. Use the following One-Time Password (OTP) to complete the reset process:';
   const footerNote = 'If you did not request a password reset, you can safely ignore this email.';
+  const html = getEmailHtml('Reset Your StageLink Password', greeting, message, otp, footerNote);
 
   console.log('\n======================================================');
   console.log(`🔐 [STAGELINK PASSWORD RESET OTP] Sent to: ${email}`);
   console.log(`🔑 OTP CODE: >>> ${otp} <<<`);
   console.log('======================================================\n');
 
+  // Try HTTP API first
+  if (process.env.RESEND_API_KEY || process.env.BREVO_API_KEY) {
+    const httpSent = await sendViaHttpApi(email, subject, html);
+    if (httpSent) return true;
+  }
+
+  const transporter = getTransporter();
+
   if (!transporter) {
-    console.warn('⚠️ EMAIL_USER or EMAIL_PASS not configured in .env. OTP was logged above for development.');
+    console.warn('⚠️ EMAIL_USER/EMAIL_PASS not configured in .env. OTP was logged above for development.');
     return true;
   }
 
@@ -234,9 +316,9 @@ export const sendPasswordResetEmail = async (email: string, name: string, otp: s
       from: fromAddress,
       to: email,
       subject,
-      html: getEmailHtml('Reset Your StageLink Password', greeting, message, otp, footerNote),
+      html,
     });
-    console.log(`✅ Password reset email successfully delivered via Gmail to ${email}`);
+    console.log(`✅ Password reset email successfully delivered via Gmail SMTP to ${email}`);
     return true;
   } catch (error: any) {
     console.error(`❌ Failed to send password reset email to ${email}:`, error?.message || error);
