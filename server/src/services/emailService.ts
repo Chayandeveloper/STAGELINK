@@ -177,7 +177,7 @@ const getEmailHtml = (title: string, greeting: string, message: string, otp: str
 // Helper to send email via HTTP API (EmailJS, Resend, or Brevo) - Bypasses Render free tier SMTP blocks
 const sendViaHttpApi = async (to: string, subject: string, html: string, otp?: string, name?: string): Promise<boolean> => {
   // 1. EmailJS (Direct personal Gmail sending via Port 443 - Never blocked on Render!)
-  const emailjsServiceId = process.env.EMAILJS_SERVICE_ID?.trim() || 'service_blw3frg';
+  const emailjsServiceId = process.env.EMAILJS_SERVICE_ID?.trim() || 'service_8a6owk3';
   const emailjsTemplateId = process.env.EMAILJS_TEMPLATE_ID?.trim() || 'template_uwj47my';
   const emailjsPublicKey = process.env.EMAILJS_PUBLIC_KEY?.trim() || 'dikNrV2u5CVOaxlkA';
   const emailjsPrivateKey = process.env.EMAILJS_PRIVATE_KEY?.trim() || 'mLum3gzmD9JQLAZbvrCe6';
