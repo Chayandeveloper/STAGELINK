@@ -4,7 +4,9 @@ import {
   getUserById, 
   updateUser, 
   deleteUser, 
-  getStats 
+  getStats,
+  getAdminSettings,
+  updateAdminSettings
 } from '../controllers/adminController';
 import { protect, admin } from '../middleware/authMiddleware';
 
@@ -22,5 +24,9 @@ router.route('/users/:id')
   .delete(deleteUser);
 
 router.get('/stats', getStats);
+
+router.route('/settings')
+  .get(getAdminSettings)
+  .put(updateAdminSettings);
 
 export default router;

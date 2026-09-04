@@ -104,6 +104,8 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+import { getSystemSettings, updateSystemSettings } from '../services/connectionService';
+
 // @desc    Get global stats
 // @route   GET /api/admin/stats
 // @access  Private/Admin
@@ -120,6 +122,52 @@ export const getStats = async (req: Request, res: Response, next: NextFunction) 
       totalPerformers,
       totalCustomers
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get system settings
+// @route   GET /api/admin/settings
+// @access  Private/Admin
+export const getAdminSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const settings = await getSystemSettings();
+    res.json(settings);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update system settings
+// @route   PUT /api/admin/settings
+// @access  Private/Admin
+export const updateAdminSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { maxDailyLikes, maxDailySwipes, likeRewardTiers } = req.body;
+    const likesNum = parseInt(maxDailyLikes);
+    const swipesNum = parseInt(maxDailySwipes);
+
+    if (isNaN(likesNum) || likesNum < 1 || isNaN(swipesNum) || swipesNum < 1) {
+      return res.status(400).json({ message: 'Max daily likes and swipes must be positive numbers' });
+    }
+
+    if (likesNum > swipesNum) {
+      return res.status(400).json({ message: 'Max daily likes cannot exceed max daily swipes' });
+    }
+
+    let validatedTiers = undefined;
+    if (Array.isArray(likeRewardTiers)) {
+      validatedTiers = likeRewardTiers.map((tier: any) => ({
+        minBill: Math.max(0, Number(tier.minBill) || 0),
+        maxBill: Math.max(1, Number(tier.maxBill) || 1),
+        extraLikes: Math.max(1, Number(tier.extraLikes) || 1),
+        durationDays: Math.max(1, Number(tier.durationDays) || 7)
+      }));
+    }
+
+    const settings = await updateSystemSettings(likesNum, swipesNum, validatedTiers);
+    res.json(settings);
   } catch (error) {
     next(error);
   }

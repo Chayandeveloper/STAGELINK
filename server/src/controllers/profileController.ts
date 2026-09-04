@@ -236,8 +236,9 @@ export const getMyProfile = async (req: AuthRequest, res: Response, next: NextFu
 
       res.status(200).json({
         ...performer.toObject(),
-        totalGigs,
-        lastPerformed
+        totalGigs: performer.totalGigs !== undefined && performer.totalGigs !== null ? performer.totalGigs : totalGigs,
+        ticketsSold: performer.ticketsSold || 0,
+        lastPerformed: performer.lastPerformed || lastPerformed
       });
     } else {
       res.status(200).json(user);

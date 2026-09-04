@@ -111,7 +111,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                <Link href={user?.role === 'restaurant' ? '/dashboard/restaurant' : user?.role === 'performer' ? '/dashboard/performer' : user?.role === 'customer' ? '/dashboard/audience' : user?.role === 'admin' ? '/dashboard/admin' : '/role-selection'}>
+                <Link href={user?.role === 'restaurant' ? '/dashboard/restaurant' : user?.role === 'performer' ? '/dashboard/performer' : user?.role === 'customer' ? '/dashboard/audience' : user?.role === 'admin' ? '/dashboard/admin' : '/register'}>
                   <Button variant="ghost" className="text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800">
                     Dashboard
                   </Button>
@@ -127,7 +127,7 @@ export function Navbar() {
                     Log in
                   </Button>
                 </Link>
-                <Link href="/role-selection">
+                <Link href="/register">
                   <Button className="bg-indigo-600 text-white hover:bg-indigo-700">
                     Sign up
                   </Button>
@@ -146,7 +146,7 @@ export function Navbar() {
                     : user?.role === 'restaurant' ? '/dashboard/restaurant' 
                     : user?.role === 'performer' ? '/dashboard/performer' 
                     : user?.role === 'admin' ? '/dashboard/admin' 
-                    : '/role-selection'
+                    : '/register'
                   }
                   className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-900 transition-colors"
                   title={user?.role === 'customer' ? 'Connection Requests' : 'Dashboard'}
@@ -169,7 +169,7 @@ export function Navbar() {
                 >
                   Log in
                 </Link>
-                <Link href="/role-selection">
+                <Link href="/register">
                   <Button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-8 px-3 py-1 rounded-full">
                     Sign up
                   </Button>

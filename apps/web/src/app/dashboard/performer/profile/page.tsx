@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { UserCircle, DollarSign, Camera, Link as LinkIcon, Phone, Save, Edit3 } from 'lucide-react';
+import { UserCircle, DollarSign, Camera, Link as LinkIcon, Phone, Save, Edit3, MoreVertical, Search, Star, Calendar, Ticket, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
+import Link from 'next/link';
 
 export default function PerformerProfilePage() {
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [profileData, setProfileData] = useState({
     displayName: '',
     genres: '',
@@ -15,7 +17,10 @@ export default function PerformerProfilePage() {
     profilePicture: '',
     instagram: '',
     youtube: '',
-    website: ''
+    website: '',
+    totalGigs: 0,
+    ticketsSold: 0,
+    lastPerformed: ''
   });
   
   const [loading, setLoading] = useState(true);
@@ -37,7 +42,10 @@ export default function PerformerProfilePage() {
             instagram: res.data.socialLinks?.instagram || '',
             youtube: res.data.socialLinks?.youtube || '',
             website: res.data.socialLinks?.website || '',
-            phone: res.data.user?.phone || ''
+            phone: res.data.user?.phone || '',
+            totalGigs: res.data.totalGigs || 0,
+            ticketsSold: res.data.ticketsSold || 0,
+            lastPerformed: res.data.lastPerformed || ''
           });
         }
       } catch (error) {
@@ -60,6 +68,9 @@ export default function PerformerProfilePage() {
         bio: profileData.bio,
         profilePicture: profileData.profilePicture,
         phone: profileData.phone,
+        totalGigs: profileData.totalGigs,
+        ticketsSold: profileData.ticketsSold,
+        lastPerformed: profileData.lastPerformed,
         socialLinks: {
           instagram: profileData.instagram,
           youtube: profileData.youtube,
@@ -82,7 +93,10 @@ export default function PerformerProfilePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setProfileData(prev => ({ ...prev, [name]: value }));
+    setProfileData(prev => ({
+      ...prev,
+      [name]: name === 'totalGigs' || name === 'ticketsSold' ? parseInt(value) || 0 : value
+    }));
   };
 
   return (
@@ -92,14 +106,42 @@ export default function PerformerProfilePage() {
           <h1 className="text-3xl font-bold text-white tracking-tight">Artist Profile</h1>
           <p className="text-zinc-400 mt-1">Manage your public artist persona and contact info.</p>
         </div>
-        <Button 
-          onClick={handleSave} 
-          disabled={saving || loading}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2"
-        >
-          <Save size={18} />
-          {saving ? 'Saving...' : 'Save Changes'}
-        </Button>
+        <div className="flex items-center gap-2 relative">
+          <Button 
+            onClick={handleSave} 
+            disabled={saving || loading}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+          >
+            <Save size={18} />
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowMoreMenu(!showMoreMenu)}
+              className="p-2.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center"
+              aria-label="More options"
+            >
+              <MoreVertical size={18} />
+            </button>
+
+            {showMoreMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMoreMenu(false)} />
+                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-zinc-900 border border-zinc-800 p-2 shadow-xl z-20 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <Link href="/dashboard/performer/gigs" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors">
+                    <Search size={16} />
+                    <span>Opportunity Feed</span>
+                  </Link>
+                  <Link href="/dashboard/performer/reviews" className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors">
+                    <Star size={16} />
+                    <span>Reviews</span>
+                  </Link>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {saveMessage.text && (
@@ -246,6 +288,57 @@ export default function PerformerProfilePage() {
                       className="w-full rounded-md border border-zinc-700 bg-zinc-800/80 pl-10 pr-3 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition-colors"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-zinc-800">
+              <h3 className="text-lg font-medium text-white mb-6 flex items-center gap-2">
+                <Calendar size={20} className="text-indigo-400" />
+                Performance Stats & History
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="flex items-center text-sm font-medium text-zinc-300 mb-1.5">
+                    <Calendar size={16} className="mr-2 text-indigo-400" />
+                    Total Gigs Performed
+                  </label>
+                  <input
+                    type="number"
+                    name="totalGigs"
+                    value={profileData.totalGigs}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-800/80 px-3 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center text-sm font-medium text-zinc-300 mb-1.5">
+                    <Ticket size={16} className="mr-2 text-indigo-400" />
+                    Total Tickets Sold
+                  </label>
+                  <input
+                    type="number"
+                    name="ticketsSold"
+                    value={profileData.ticketsSold}
+                    onChange={handleChange}
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-800/80 px-3 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center text-sm font-medium text-zinc-300 mb-1.5">
+                    <Users size={16} className="mr-2 text-indigo-400" />
+                    Last Performed At
+                  </label>
+                  <input
+                    type="text"
+                    name="lastPerformed"
+                    value={profileData.lastPerformed || ''}
+                    onChange={handleChange}
+                    placeholder="e.g. The Grand Theater, Sept 2025"
+                    className="w-full rounded-md border border-zinc-700 bg-zinc-800/80 px-3 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition-colors"
+                  />
                 </div>
               </div>
             </div>

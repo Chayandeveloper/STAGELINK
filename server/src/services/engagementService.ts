@@ -68,6 +68,7 @@ import { ConnectionRequest } from '../models/ConnectionRequest';
 import { Reservation } from '../models/Reservation';
 import { Meetup } from '../models/Meetup';
 import { Review } from '../models/Review';
+import { UserSwipe } from '../models/UserSwipe';
 
 export const getNearbyPeople = async (userId: string, city?: string) => {
   if (!city) {
@@ -89,18 +90,23 @@ export const getNearbyPeople = async (userId: string, city?: string) => {
     });
   });
 
-  // Also exclude users where there is a pending request
-  const pendingRequests = await ConnectionRequest.find({
+  // Exclude users where there is a pending/accepted/rejected request
+  const requests = await ConnectionRequest.find({
     $or: [
       { requester: userId },
       { recipient: userId }
-    ],
-    status: 'pending'
+    ]
   });
 
-  pendingRequests.forEach(req => {
+  requests.forEach(req => {
     excludedUserIds.push(req.requester.toString());
     excludedUserIds.push(req.recipient.toString());
+  });
+
+  // Also exclude any targets swiped (liked or disliked) by this user
+  const userSwipes = await UserSwipe.find({ swiper: userId });
+  userSwipes.forEach(s => {
+    excludedUserIds.push(s.target.toString());
   });
 
   const users = await User.find({

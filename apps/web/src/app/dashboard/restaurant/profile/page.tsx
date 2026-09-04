@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Store, MapPin, Phone, Plus, Edit2, Trash2, LayoutDashboard, Save } from 'lucide-react';
+import { Store, MapPin, Phone, Plus, Edit2, Trash2, LayoutDashboard, Save, MoreHorizontal, PlusCircle, Briefcase, Calendar, MessageSquare, Star, Settings, LogOut, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import api from '@/lib/api';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface Table {
   _id: string;
@@ -25,6 +28,10 @@ export default function VenueProfilePage() {
     contactDetails: '',
     logo: ''
   });
+  
+  const [showMenu, setShowMenu] = useState(false);
+  const { logout } = useAuthStore();
+  const router = useRouter();
   
   const [savingProfile, setSavingProfile] = useState(false);
   const [saveProfileMessage, setSaveProfileMessage] = useState({ text: '', type: '' });
@@ -162,9 +169,85 @@ export default function VenueProfilePage() {
 
   return (
     <div className="max-w-4xl space-y-12 pb-12">
-      <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Venue Profile</h1>
-        <p className="text-zinc-400 mt-1">Manage your public appearance and table layout.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Venue Profile</h1>
+          <p className="text-zinc-400 mt-1">Manage your public appearance and table layout.</p>
+        </div>
+
+        {/* Instagram Style 3-Dot Options Menu */}
+        <div className="relative">
+          <button 
+            onClick={() => setShowMenu(!showMenu)}
+            className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-full transition-colors focus:outline-none"
+            title="Options"
+          >
+            <MoreHorizontal size={24} />
+          </button>
+          
+          {showMenu && (
+            <>
+              {/* Overlay backdrop to close the menu when clicking outside */}
+              <div 
+                className="fixed inset-0 z-40 bg-transparent" 
+                onClick={() => setShowMenu(false)}
+              />
+              <div className="absolute right-0 mt-2 w-64 rounded-xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                  Menu
+                </div>
+                <div className="h-px bg-zinc-800 my-1.5" />
+                <div className="space-y-0.5">
+                  <Link 
+                    href="/dashboard/restaurant/post-gig"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <PlusCircle size={16} className="text-zinc-400" />
+                    <span>Create Opportunity</span>
+                  </Link>
+                  <Link 
+                    href="/dashboard/restaurant/events"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <Calendar size={16} className="text-zinc-400" />
+                    <span>Events</span>
+                  </Link>
+                  <Link 
+                    href="/dashboard/messages"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <MessageSquare size={16} className="text-zinc-400" />
+                    <span>Messages</span>
+                  </Link>
+                  <Link 
+                    href="/dashboard/restaurant/payment-settings"
+                    className="flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:text-white hover:bg-zinc-900 rounded-lg transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <Settings size={16} className="text-zinc-400" />
+                    <span>Payment Settings</span>
+                  </Link>
+                </div>
+                <div className="h-px bg-zinc-800 my-1.5" />
+                <div className="space-y-0.5">
+                  <button 
+                    onClick={() => {
+                      logout();
+                      window.location.href = '/login';
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+                  >
+                    <LogOut size={16} />
+                    <span>Log out</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* General Information Section */}

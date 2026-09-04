@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus, Home } from 'lucide-react';
+import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus, Home, HeartHandshake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -43,15 +43,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { label: 'Manage Users', href: '/dashboard/admin/users', icon: Users },
     { label: 'Manage Ads', href: '/dashboard/admin/ads', icon: Image },
+    { label: 'System Settings', href: '/dashboard/admin/settings', icon: Settings },
   ];
 
   const performerNav = [
     { label: 'Dashboard', href: '/dashboard/performer', icon: LayoutDashboard },
     { label: 'Opportunity Feed', href: '/dashboard/performer/gigs', icon: Search },
     { label: 'Local Venues', href: '/dashboard/performer/venues', icon: MapPin },
-    { label: 'My Applications', href: '/dashboard/performer/applications', icon: Send },
-    { label: 'Accepted Gigs', href: '/dashboard/performer/calendar', icon: CalendarCheck },
-    { label: 'Portfolio', href: '/dashboard/performer/portfolio', icon: Image },
+    { label: 'Applications & Gigs', href: '/dashboard/performer/applications', icon: Send },
     { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
     { label: 'Reviews', href: '/dashboard/performer/reviews', icon: Star },
     { label: 'Profile', href: '/dashboard/performer/profile', icon: UserCircle },
@@ -61,12 +60,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Dashboard', href: '/dashboard/restaurant', icon: LayoutDashboard },
     { label: 'Create Opportunity', href: '/dashboard/restaurant/post-gig', icon: PlusCircle },
     { label: 'Local Performers', href: '/dashboard/restaurant/performers', icon: MapPin },
-    { label: 'My Opportunities', href: '/dashboard/restaurant/my-opportunities', icon: Briefcase },
     { label: 'Applications', href: '/dashboard/restaurant/applications', icon: Users },
     { label: 'Events', href: '/dashboard/restaurant/events', icon: Calendar },
     { label: 'Table Bookings', href: '/dashboard/restaurant/tables-booking', icon: ReceiptText },
+    { label: 'Customer Like Codes', href: '/dashboard/restaurant/like-codes', icon: HeartHandshake },
     { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
-    { label: 'Reviews', href: '/dashboard/restaurant/reviews', icon: Star },
     { label: 'Payment Settings', href: '/dashboard/restaurant/payment-settings', icon: Settings },
     { label: 'Venue Profile', href: '/dashboard/restaurant/profile', icon: Store },
   ];
@@ -77,6 +75,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { label: 'Tonight', href: '/dashboard/audience/events', icon: Music },
     { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
     { label: 'Profile', href: '/dashboard/audience/profile', icon: UserCircle },
+  ];
+
+  const venueBottomNav = [
+    { label: 'Home', href: '/dashboard/restaurant', icon: Home },
+    { label: 'Bookings', href: '/dashboard/restaurant/tables-booking', icon: ReceiptText },
+    { label: 'Application', href: '/dashboard/restaurant/applications', icon: Users },
+    { label: 'Performers', href: '/dashboard/restaurant/performers', icon: MapPin },
+    { label: 'Profile', href: '/dashboard/restaurant/profile', icon: Store },
+  ];
+
+  const performerBottomNav = [
+    { label: 'Home', href: '/dashboard/performer', icon: Home },
+    { label: 'Venues', href: '/dashboard/performer/venues', icon: MapPin },
+    { label: 'Applications', href: '/dashboard/performer/applications', icon: Send },
+    { label: 'Profile', href: '/dashboard/performer/profile', icon: UserCircle },
   ];
 
   let navItems = venueNav;
@@ -95,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         : 'min-h-[calc(100vh-4rem)]'
     }`}>
       {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && !isAudience && (
+      {isSidebarOpen && !isAudience && !isVenue && !isPerformer && (
         <div 
           className="fixed inset-0 bg-black/60 z-40 lg:hidden" 
           onClick={() => setIsSidebarOpen(false)}
@@ -104,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-200 ease-in-out border-r border-zinc-800 bg-zinc-900 flex flex-col lg:relative lg:translate-x-0 ${
-        isSidebarOpen && !isAudience ? 'translate-x-0' : '-translate-x-full'
+        isSidebarOpen && !isAudience && !isVenue && !isPerformer ? 'translate-x-0' : '-translate-x-full'
       } lg:bg-zinc-900/50`}>
         <div className="p-6 flex justify-between items-center">
           <h2 className="text-xl font-bold text-white tracking-tight">
@@ -160,8 +173,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col min-w-0 h-full ${isAudience && !isChatActiveOnMobile ? 'pb-16 lg:pb-0' : ''}`}>
-        {!isAudience && !isChatActiveOnMobile && (
+      <main className={`flex-1 flex flex-col min-w-0 h-full ${(isAudience || isVenue || isPerformer) && !isChatActiveOnMobile ? 'pb-16 lg:pb-0' : ''}`}>
+        {!isAudience && !isVenue && !isPerformer && !isChatActiveOnMobile && (
           <div className="lg:hidden p-4 flex items-center border-b border-zinc-800 bg-zinc-950">
             <button 
               suppressHydrationWarning={true}
@@ -183,17 +196,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile Bottom Navigation (Instagram Style) */}
-      {isAudience && !(pathname === '/dashboard/messages' && activeConversation) && (
+      {(isAudience || isVenue || isPerformer) && !(pathname === '/dashboard/messages' && activeConversation) && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-800 bg-zinc-950/80 backdrop-blur-md px-4 py-2 pb-3">
           <div className="flex items-center justify-around h-12">
-            {audienceBottomNav.map((item) => {
+            {(isAudience ? audienceBottomNav : isVenue ? venueBottomNav : performerBottomNav).map((item) => {
               const Icon = item.icon;
-              const isActive = item.href === '/dashboard/audience'
-                ? pathname === '/dashboard/audience' || 
-                  pathname.startsWith('/dashboard/audience/saved') || 
-                  pathname.startsWith('/dashboard/audience/reservations') || 
-                  pathname.startsWith('/dashboard/audience/connection-requests')
-                : pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+              const isActive = isAudience
+                ? (item.href === '/dashboard/audience'
+                  ? pathname === '/dashboard/audience' || 
+                    pathname.startsWith('/dashboard/audience/saved') || 
+                    pathname.startsWith('/dashboard/audience/reservations') || 
+                    pathname.startsWith('/dashboard/audience/connection-requests')
+                  : pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)))
+                : isVenue
+                ? (item.href === '/dashboard/restaurant'
+                  ? pathname === '/dashboard/restaurant'
+                  : item.href === '/dashboard/restaurant/profile'
+                  ? pathname.startsWith('/dashboard/restaurant/profile') || 
+                    pathname.startsWith('/dashboard/restaurant/post-gig') || 
+                    pathname.startsWith('/dashboard/restaurant/events') || 
+                    pathname.startsWith('/dashboard/restaurant/payment-settings')
+                  : pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)))
+                : (item.href === '/dashboard/performer'
+                  ? pathname === '/dashboard/performer' || 
+                    pathname.startsWith('/dashboard/performer/gigs') || 
+                    pathname.startsWith('/dashboard/performer/calendar')
+                  : item.href === '/dashboard/performer/profile'
+                  ? pathname.startsWith('/dashboard/performer/profile') || 
+                    pathname.startsWith('/dashboard/performer/portfolio') || 
+                    pathname.startsWith('/dashboard/performer/reviews')
+                  : pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)));
               
               return (
                 <Link key={item.href} href={item.href} className="flex-1 flex flex-col items-center justify-center">

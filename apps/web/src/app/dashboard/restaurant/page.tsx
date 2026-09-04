@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Calendar, TrendingUp, Music, Star, MapPin } from 'lucide-react';
+import { Plus, Users, Calendar, TrendingUp, Music, Star, MapPin, HeartHandshake } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
@@ -44,15 +44,24 @@ export default function RestaurantDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Venue Overview</h1>
-          <p className="text-zinc-400 mt-1">Manage your upcoming gigs and applications.</p>
+          <p className="text-zinc-400 mt-1">Manage your upcoming gigs, like codes, and applications.</p>
         </div>
-        <Link 
-          href="/dashboard/restaurant/performers"
-          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg"
-        >
-          <Users className="mr-2 h-4 w-4" />
-          Find Performers
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link 
+            href="/dashboard/restaurant/like-codes"
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold transition-colors bg-pink-600/20 border border-pink-500/40 hover:bg-pink-600/30 text-pink-300 rounded-xl shadow-lg"
+          >
+            <HeartHandshake className="mr-2 h-4 w-4 text-pink-400" />
+            Issue Like Code
+          </Link>
+          <Link 
+            href="/dashboard/restaurant/performers"
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg"
+          >
+            <Users className="mr-2 h-4 w-4" />
+            Find Performers
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

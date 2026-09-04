@@ -17,6 +17,11 @@ export interface IUser extends Document {
   privacySettings?: {
     visibility: 'invisible' | 'nearby' | 'everyone';
   };
+  isEmailVerified: boolean;
+  emailOtp?: string;
+  emailOtpExpires?: Date;
+  resetPasswordOtp?: string;
+  resetPasswordOtpExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,7 +53,12 @@ const userSchema = new Schema<IUser>({
       enum: ['invisible', 'nearby', 'everyone'],
       default: 'nearby' 
     }
-  }
+  },
+  isEmailVerified: { type: Boolean, default: false },
+  emailOtp: { type: String },
+  emailOtpExpires: { type: Date },
+  resetPasswordOtp: { type: String },
+  resetPasswordOtpExpires: { type: Date }
 }, {
   timestamps: true
 });
