@@ -60,24 +60,38 @@ export function Navbar() {
     }
   ];
 
+  const isWelcomePage = pathname === '/';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
+  const hideNavLinks = isWelcomePage || isAuthPage;
   const isChatActiveOnMobile = isMounted && pathname === '/dashboard/messages' && activeConversation;
+
+  const getLogoHref = () => {
+    if (!isMounted || !isAuthenticated || !user) return '/';
+    if (user.role === 'customer') return '/dashboard/audience';
+    if (user.role === 'restaurant') return '/dashboard/restaurant';
+    if (user.role === 'performer') return '/dashboard/performer';
+    if (user.role === 'admin') return '/dashboard/admin';
+    return '/dashboard/audience';
+  };
 
   return (
     <nav className={`sticky top-0 z-50 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/60 ${isChatActiveOnMobile ? 'hidden md:block' : ''}`}>
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center space-x-2">
+          <Link href={getLogoHref()} className="flex items-center space-x-2">
             <span className="text-xl font-bold tracking-tight text-zinc-50">
               Stage<span className="text-indigo-500">Link</span>
             </span>
           </Link>
-          <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-zinc-300">
-            {navLinks.map((link) => (
-              <Link key={link.label} href={link.href} className="transition-colors hover:text-zinc-50">
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          {!hideNavLinks && (
+            <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-zinc-300">
+              {navLinks.map((link) => (
+                <Link key={link.label} href={link.href} className="transition-colors hover:text-zinc-50">
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4">
