@@ -13,7 +13,20 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  let token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token && typeof window !== 'undefined') {
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        token = parsed?.state?.token;
+        if (token) {
+          localStorage.setItem('token', token);
+        }
+      }
+    } catch {}
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -28,6 +41,18 @@ api.interceptors.response.use(
     if (error.response) {
       const url = error.config?.url || '';
       const status = error.response.status;
+
+      // Handle 401 Unauthorized for expired or invalidated tokens (except during login attempts)
+      if (status === 401 && !url.includes('/auth/login')) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('auth-storage');
+          if (window.location.pathname.startsWith('/dashboard')) {
+            window.location.href = '/login?expired=true';
+          }
+        }
+      }
+
       // Suppress expected 404s (e.g. ads route not yet implemented or profile not created yet)
       const isExpected404 = status === 404 && (url.includes('/ads/') || url.includes('/profile/me'));
       if (!isExpected404) {

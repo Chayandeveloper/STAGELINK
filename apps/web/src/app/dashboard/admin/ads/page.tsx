@@ -5,9 +5,14 @@ import { Loader2, Plus, Trash2, Edit, Save, X, Image as ImageIcon } from 'lucide
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/useAuthStore';
+
 export default function AdminAdsPage() {
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const user = useAuthStore(state => state.user);
+  const router = useRouter();
   
   const [isCreating, setIsCreating] = useState(false);
   const [newAd, setNewAd] = useState<{ title: string, imageUrl: string, targets: { role: string, module: string }[], durationMs: number, isActive: boolean }>({ title: '', imageUrl: '', targets: [{ role: 'all', module: 'all' }], durationMs: 5000, isActive: true });
@@ -16,16 +21,32 @@ export default function AdminAdsPage() {
     try {
       const res = await api.get('/ads');
       setAds(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch ads', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        router.push('/login');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const currentUser = useAuthStore.getState().user;
+
+    if (!token && !currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    if (currentUser && currentUser.role !== 'admin') {
+      router.push('/login');
+      return;
+    }
+
     fetchAds();
-  }, []);
+  }, [user, router]);
 
   const handleCreate = async () => {
     try {

@@ -5,27 +5,48 @@ import { Loader2, Trash2, Edit, Save, X, KeyRound } from 'lucide-react';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/useAuthStore';
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [newPassword, setNewPassword] = useState('');
+  const user = useAuthStore(state => state.user);
+  const router = useRouter();
 
   const fetchUsers = async () => {
     try {
       const res = await api.get('/admin/users');
       setUsers(res.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch users', err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        router.push('/login');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const currentUser = useAuthStore.getState().user;
+
+    if (!token && !currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    if (currentUser && currentUser.role !== 'admin') {
+      router.push('/login');
+      return;
+    }
+
     fetchUsers();
-  }, []);
+  }, [user, router]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;

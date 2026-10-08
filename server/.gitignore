@@ -12,6 +12,7 @@ tsconfig.tsbuildinfo
 .env
 .env.*
 *.env
+*firebase*.json
 
 # Debug and Logs
 logs/

@@ -85,3 +85,48 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     res.status(400).json({ message: error.message || 'Failed to reset password' });
   }
 };
+
+export const saveFcmToken = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'FCM token is required' });
+    }
+
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { User } = require('../models/User');
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { fcmTokens: token },
+    });
+
+    res.status(200).json({ success: true, message: 'FCM token saved successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeFcmToken = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const { token } = req.body;
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { User } = require('../models/User');
+    if (token) {
+      await User.findByIdAndUpdate(userId, {
+        $pull: { fcmTokens: token },
+      });
+    }
+
+    res.status(200).json({ success: true, message: 'FCM token removed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+

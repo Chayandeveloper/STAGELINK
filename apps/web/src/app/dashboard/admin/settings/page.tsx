@@ -31,15 +31,25 @@ export default function AdminSettingsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      router.push('/login');
-      return;
-    }
+    let isMounted = true;
 
-    const fetchSettings = async () => {
+    const checkAuthAndFetch = async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const currentUser = useAuthStore.getState().user;
+
+      if (!token && !currentUser) {
+        router.push('/login');
+        return;
+      }
+
+      if (currentUser && currentUser.role !== 'admin') {
+        router.push('/login');
+        return;
+      }
+
       try {
         const res = await api.get('/admin/settings');
-        if (res.data) {
+        if (isMounted && res.data) {
           setMaxDailyLikes(res.data.maxDailyLikes ?? 15);
           setMaxDailySwipes(res.data.maxDailySwipes ?? 50);
           if (Array.isArray(res.data.likeRewardTiers) && res.data.likeRewardTiers.length > 0) {
@@ -51,16 +61,23 @@ export default function AdminSettingsPage() {
             })));
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to fetch admin settings', err);
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          router.push('/login');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    if (user?.role === 'admin') {
-      fetchSettings();
-    }
+    checkAuthAndFetch();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, router]);
 
   const handleAddTier = () => {

@@ -7,17 +7,39 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useChatStore } from '@/store/useChatStore';
+import { requestNotificationPermission, setupForegroundListener, removeNotificationToken } from '@/lib/firebase';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const activeConversation = useChatStore((state) => state.activeConversation);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+
+    if (user) {
+      // Request permission and sync device FCM token with backend
+      requestNotificationPermission();
+
+      // Listen for foreground notifications when tab is open
+      const unsubscribe = setupForegroundListener((payload) => {
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
+          const body = payload.notification?.body || 'You received a new message';
+          new Notification(title, {
+            body,
+            icon: '/favicon.ico',
+          });
+        }
+      });
+
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [user]);
 
   const isMessagesPage = isMounted && pathname === '/dashboard/messages';
   const isChatActiveOnMobile = isMessagesPage && activeConversation;
@@ -159,9 +181,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Button 
             variant="ghost" 
             className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            onClick={() => {
+            onClick={async () => {
+              await removeNotificationToken();
+              logout();
               if (typeof window !== 'undefined') {
-                localStorage.removeItem('token');
                 window.location.href = '/login';
               }
             }}

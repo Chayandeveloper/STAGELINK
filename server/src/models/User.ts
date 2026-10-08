@@ -22,6 +22,7 @@ export interface IUser extends Document {
   emailOtpExpires?: Date;
   resetPasswordOtp?: string;
   resetPasswordOtpExpires?: Date;
+  fcmTokens?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,7 +59,8 @@ const userSchema = new Schema<IUser>({
   emailOtp: { type: String },
   emailOtpExpires: { type: Date },
   resetPasswordOtp: { type: String },
-  resetPasswordOtpExpires: { type: Date }
+  resetPasswordOtpExpires: { type: Date },
+  fcmTokens: { type: [String], default: [] }
 }, {
   timestamps: true
 });

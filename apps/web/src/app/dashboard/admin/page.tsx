@@ -13,25 +13,45 @@ export default function AdminDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      router.push('/login');
-      return;
-    }
+    let isMounted = true;
 
-    const fetchStats = async () => {
+    const checkAuthAndFetch = async () => {
+      // Check auth state from store or localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const currentUser = useAuthStore.getState().user;
+
+      if (!token && !currentUser) {
+        router.push('/login');
+        return;
+      }
+
+      if (currentUser && currentUser.role !== 'admin') {
+        router.push('/login');
+        return;
+      }
+
       try {
         const res = await api.get('/admin/stats');
-        setStats(res.data);
-      } catch (err) {
+        if (isMounted) {
+          setStats(res.data);
+        }
+      } catch (err: any) {
         console.error('Failed to fetch admin stats', err);
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          router.push('/login');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
-    
-    if (user?.role === 'admin') {
-      fetchStats();
-    }
+
+    checkAuthAndFetch();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, router]);
 
   if (loading) {

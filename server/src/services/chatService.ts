@@ -1,5 +1,6 @@
 import { Conversation } from '../models/Conversation';
 import { Message } from '../models/Message';
+import { NotificationService } from './notificationService';
 import mongoose from 'mongoose';
 
 export class ChatService {
@@ -91,6 +92,23 @@ export class ChatService {
       await conv.save();
     }
     await message.populate('sender', 'name');
+
+    // Trigger push notification to other participants in the background
+    if (conv && conv.participants) {
+      const senderName = (message.sender as any)?.name || 'Someone';
+      conv.participants.forEach((p) => {
+        const pIdStr = p.toString();
+        if (pIdStr !== senderId) {
+          NotificationService.sendChatPushNotification({
+            recipientId: pIdStr,
+            senderName,
+            messageText: content,
+            conversationId,
+            messageType,
+          }).catch((err) => console.error('Push notification background error:', err));
+        }
+      });
+    }
 
     return message;
   }
