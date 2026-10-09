@@ -8,35 +8,17 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useChatStore } from '@/store/useChatStore';
 import { requestNotificationPermission, setupForegroundListener, removeNotificationToken } from '@/lib/firebase';
+import { soundManager } from '@/lib/sound';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user, logout } = useAuthStore();
-  const activeConversation = useChatStore((state) => state.activeConversation);
+  const { user, token, logout } = useAuthStore();
+  const { activeConversation, connectSocket } = useChatStore();
   const [isMounted, setIsMounted] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [foregroundToast, setForegroundToast] = useState<{ title: string; body: string; url: string } | null>(null);
-
-  const playNotificationChime = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.45);
-    } catch {}
-  };
 
   useEffect(() => {
     if (foregroundToast) {
@@ -48,7 +30,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     setIsMounted(true);
 
-    if (user) {
+    if (user && token) {
+      connectSocket(token);
+
       if (typeof window !== 'undefined' && 'Notification' in window) {
         if (Notification.permission === 'default') {
           setShowNotificationPrompt(true);
@@ -64,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const targetUrl = payload.data?.click_action || '/dashboard/messages';
 
         // 1. Play audio chime
-        playNotificationChime();
+        soundManager.playNotificationSound();
 
         // 2. Trigger native OS notification via Service Worker
         if (typeof window !== 'undefined' && 'serviceWorker' in navigator && Notification.permission === 'granted') {

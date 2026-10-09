@@ -37,11 +37,7 @@ export default function MessagesPage() {
 
       fetchConversations();
     }
-
-    return () => {
-      disconnectSocket();
-    };
-  }, [token, user, connectSocket, disconnectSocket, setConversations]);
+  }, [token, user, connectSocket, setConversations]);
 
   // Fetch messages when active conversation changes
   useEffect(() => {

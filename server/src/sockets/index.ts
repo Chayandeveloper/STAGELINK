@@ -2,6 +2,7 @@ import { Server, Socket } from 'socket.io';
 import http from 'http';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
+import { Conversation } from '../models/Conversation';
 import { ChatService } from '../services/chatService';
 
 // In-memory Map to track connected users: userId -> socketId
@@ -66,6 +67,9 @@ export const initSocket = (server: http.Server) => {
     // Broadcast user online to everyone (or restrict to contacts later)
     socket.broadcast.emit('user_online', userId);
 
+    // Join personal room for user-specific events
+    socket.join(userId);
+
     // Join conversation rooms
     socket.on('join_conversation', (conversationId: string) => {
       socket.join(conversationId);
@@ -80,16 +84,42 @@ export const initSocket = (server: http.Server) => {
     });
 
     // Handle typing indicators
-    socket.on('typing_start', ({ conversationId }) => {
-      socket.to(conversationId).emit('display_typing', { conversationId, userId, isTyping: true });
+    socket.on('typing_start', async ({ conversationId }: { conversationId: string }) => {
+      try {
+        const conv = await Conversation.findById(conversationId).select('participants').lean();
+        const targetRooms = new Set<string>();
+        targetRooms.add(conversationId);
+        if (conv?.participants) {
+          conv.participants.forEach((p: any) => {
+            const pStr = p.toString();
+            if (pStr !== userId) targetRooms.add(pStr);
+          });
+        }
+        socket.to(Array.from(targetRooms)).emit('display_typing', { conversationId, userId, isTyping: true });
+      } catch (err) {
+        socket.to(conversationId).emit('display_typing', { conversationId, userId, isTyping: true });
+      }
     });
 
-    socket.on('typing_stop', ({ conversationId }) => {
-      socket.to(conversationId).emit('display_typing', { conversationId, userId, isTyping: false });
+    socket.on('typing_stop', async ({ conversationId }: { conversationId: string }) => {
+      try {
+        const conv = await Conversation.findById(conversationId).select('participants').lean();
+        const targetRooms = new Set<string>();
+        targetRooms.add(conversationId);
+        if (conv?.participants) {
+          conv.participants.forEach((p: any) => {
+            const pStr = p.toString();
+            if (pStr !== userId) targetRooms.add(pStr);
+          });
+        }
+        socket.to(Array.from(targetRooms)).emit('display_typing', { conversationId, userId, isTyping: false });
+      } catch (err) {
+        socket.to(conversationId).emit('display_typing', { conversationId, userId, isTyping: false });
+      }
     });
 
     // Send messages
-    socket.on('send_message', async (data: { conversationId: string, content: string, messageType?: any }) => {
+    socket.on('send_message', async (data: { conversationId: string, content: string, messageType?: any, tempId?: string }) => {
       try {
         const message = await ChatService.saveMessage(
           data.conversationId, 
@@ -97,27 +127,42 @@ export const initSocket = (server: http.Server) => {
           data.content, 
           data.messageType || 'text'
         );
-        
-        // Emit the fully persisted message to everyone in the room (including sender to confirm)
-        io.to(data.conversationId).emit('receive_message', message);
+
+        const conv = await Conversation.findById(data.conversationId).select('participants').lean();
+        const messageObj: any = (message as any).toObject ? (message as any).toObject() : { ...message };
+        if (data.tempId) {
+          messageObj.tempId = data.tempId;
+        }
+
+        const targetRooms = new Set<string>();
+        targetRooms.add(data.conversationId);
+        if (conv?.participants) {
+          conv.participants.forEach((p: any) => targetRooms.add(p.toString()));
+        }
+
+        // Emit the fully persisted message to conversation room and participants
+        io.to(Array.from(targetRooms)).emit('receive_message', messageObj);
       } catch (err) {
         console.error('Error saving message via socket:', err);
-        socket.emit('message_error', { error: 'Failed to send message' });
+        socket.emit('message_error', { error: 'Failed to send message', tempId: data.tempId });
       }
     });
 
     // Read receipts
-    socket.on('mark_read', async ({ conversationId }) => {
+    socket.on('mark_read', async ({ conversationId }: { conversationId: string }) => {
       try {
         await ChatService.markAsRead(conversationId, userId);
-        socket.to(conversationId).emit('messages_read', { conversationId, readBy: userId });
+        const conv = await Conversation.findById(conversationId).select('participants').lean();
+        const targetRooms = new Set<string>();
+        targetRooms.add(conversationId);
+        if (conv?.participants) {
+          conv.participants.forEach((p: any) => targetRooms.add(p.toString()));
+        }
+        io.to(Array.from(targetRooms)).emit('messages_read', { conversationId, readBy: userId });
       } catch (err) {
         console.error('Error marking messages as read:', err);
       }
     });
-
-    // Join personal room for user-specific events
-    socket.join(userId);
 
     socket.on('disconnect', () => {
       console.log(`User disconnected: ${socket.id}, UserID: ${userId}`);
