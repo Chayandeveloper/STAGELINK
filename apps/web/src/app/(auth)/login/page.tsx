@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, Mail, KeyRound, ArrowRight, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import api from '@/lib/api';
+import { requestNotificationPermission } from '@/lib/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,6 +56,19 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       setAuth(data, data.token);
+
+      // Proactively trigger notification permission on first login user gesture
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('first_login_prompt', 'true');
+        if ('Notification' in window && Notification.permission === 'default') {
+          try {
+            await requestNotificationPermission();
+          } catch (notifErr) {
+            console.warn('Initial login notification request handled:', notifErr);
+          }
+        }
+      }
+
       redirectUser(data.role);
     } catch (err: any) {
       console.error('LOGIN ERROR:', err);

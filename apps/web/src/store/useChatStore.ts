@@ -9,6 +9,7 @@ export interface Message {
   conversationId: string;
   sender: { _id: string; name: string };
   content: string;
+  image?: string;
   messageType: 'text' | 'image' | 'voice' | 'file' | 'audio';
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
   createdAt: string;
@@ -42,6 +43,7 @@ interface ChatState {
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
   sendMessage: (conversationId: string, content: string) => void;
+  sendImageMessage: (conversationId: string, imageDataUrl: string, caption?: string) => void;
   resendMessage: (tempId: string) => void;
   markAsRead: (conversationId: string) => void;
   toggleSound: () => boolean;
@@ -291,6 +293,64 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  sendImageMessage: (conversationId: string, imageDataUrl: string, caption?: string) => {
+    if (!imageDataUrl) return;
+
+    const currentUser = useAuthStore.getState().user;
+    const currentUserId = currentUser?._id || '';
+    const currentUserName = currentUser?.name || 'Me';
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const nowIso = new Date().toISOString();
+
+    const payloadContent = caption?.trim() 
+      ? `${imageDataUrl}|||CAPTION|||${caption.trim()}` 
+      : imageDataUrl;
+
+    const optimisticMessage: Message = {
+      _id: tempId,
+      tempId,
+      conversationId,
+      sender: { _id: currentUserId, name: currentUserName },
+      content: payloadContent,
+      image: imageDataUrl,
+      messageType: 'image',
+      status: 'sending',
+      createdAt: nowIso,
+    };
+
+    // 1. Immediately append to chat UI for zero-latency feel
+    set((state) => ({
+      messages: [...state.messages, optimisticMessage],
+      conversations: state.conversations.map((c) =>
+        c._id === conversationId
+          ? { ...c, lastMessage: '📷 Photo', lastMessageAt: nowIso }
+          : c
+      ).sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime()),
+    }));
+
+    // 2. Play tactile sent sound
+    soundManager.playSentSound();
+
+    // 3. Emit via socket
+    const socket = get().socket;
+    if (socket && socket.connected) {
+      socket.emit('send_message', { 
+        conversationId, 
+        content: payloadContent, 
+        messageType: 'image', 
+        tempId 
+      });
+    } else {
+      setTimeout(() => {
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m._id === tempId ? { ...m, status: 'error' } : m
+          ),
+        }));
+      }, 1000);
+    }
+  },
+
   resendMessage: (tempId: string) => {
     const state = get();
     const msg = state.messages.find((m) => m._id === tempId || m.tempId === tempId);
@@ -307,6 +367,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       socket.emit('send_message', {
         conversationId: msg.conversationId,
         content: msg.content,
+        messageType: msg.messageType || 'text',
         tempId: msg.tempId || msg._id,
       });
     }

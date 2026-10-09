@@ -126,6 +126,8 @@ export function ConversationList({ conversations, userId }: Props) {
                   )}>
                     {isTyping ? (
                       <span className="text-indigo-400 font-medium italic animate-pulse">Typing...</span>
+                    ) : conv.lastMessage?.startsWith('data:image/') || conv.lastMessage?.includes('|||CAPTION|||') || conv.lastMessage === '📷 Photo' ? (
+                      <span className="text-zinc-300 font-medium flex items-center gap-1">📷 Photo</span>
                     ) : (
                       conv.lastMessage || 'No messages yet'
                     )}

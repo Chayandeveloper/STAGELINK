@@ -65,11 +65,13 @@ export class ChatService {
     content: string, 
     messageType: 'text' | 'image' | 'voice' | 'file' | 'audio' = 'text'
   ) {
+    const isImage = messageType === 'image';
     const message = new Message({
       conversationId,
       sender: senderId,
       content,
       messageType,
+      image: isImage ? content : undefined,
       status: 'sent'
     });
 
@@ -78,7 +80,7 @@ export class ChatService {
     // Update conversation metadata
     const conv = await Conversation.findById(conversationId);
     if (conv) {
-      conv.lastMessage = content.substring(0, 50); // Preview
+      conv.lastMessage = isImage ? '📷 Photo' : content.substring(0, 50); // Preview
       conv.lastMessageAt = message.createdAt;
       conv.lastMessageSender = new mongoose.Types.ObjectId(senderId);
       
@@ -109,7 +111,7 @@ export class ChatService {
           NotificationService.sendChatPushNotification({
             recipientId: pIdStr,
             senderName,
-            messageText: content,
+            messageText: isImage ? '📷 Sent a photo' : content,
             conversationId,
             messageType,
           }).catch((err) => console.error('Push notification background error:', err));

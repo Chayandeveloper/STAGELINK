@@ -17,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { activeConversation, connectSocket } = useChatStore();
   const [isMounted, setIsMounted] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
   const [foregroundToast, setForegroundToast] = useState<{ title: string; body: string; url: string } | null>(null);
 
@@ -36,6 +37,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (typeof window !== 'undefined' && 'Notification' in window) {
         if (Notification.permission === 'default') {
           setShowNotificationPrompt(true);
+          const hasSeenPrompt = localStorage.getItem('seen_notif_modal');
+          if (!hasSeenPrompt) {
+            setShowFirstTimeModal(true);
+          }
         } else if (Notification.permission === 'granted') {
           requestNotificationPermission();
         }
@@ -95,6 +100,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const token = await requestNotificationPermission();
       if (token || (typeof window !== 'undefined' && Notification.permission === 'granted')) {
         setShowNotificationPrompt(false);
+        setShowFirstTimeModal(false);
+        localStorage.setItem('seen_notif_modal', 'true');
       }
     } finally {
       setEnablingNotifications(false);
@@ -281,6 +288,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <X size={16} />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Instagram-Style First-Time Notification Permission Modal */}
+        {showFirstTimeModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-xl p-4 animate-in fade-in duration-300">
+            <div className="relative w-full max-w-sm bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 border border-indigo-500/30 rounded-3xl p-6 text-center shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              {/* Ambient Background Aura */}
+              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-32 bg-indigo-500/25 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-pink-500/20 via-purple-500/20 to-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto mb-4 shadow-lg">
+                <Bell className="w-8 h-8 animate-bounce text-indigo-300" />
+              </div>
+
+              <h3 className="text-xl font-extrabold text-white tracking-tight">Turn On Notifications</h3>
+              <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+                Never miss connection requests, direct messages, or event alerts. Get instant notifications in real-time.
+              </p>
+
+              <div className="mt-6 space-y-2.5">
+                <Button
+                  onClick={handleEnableNotifications}
+                  disabled={enablingNotifications}
+                  className="w-full py-5 rounded-2xl bg-gradient-to-r from-pink-600 via-rose-600 to-indigo-600 hover:from-pink-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-pink-900/40 cursor-pointer active:scale-95 transition-all"
+                >
+                  {enablingNotifications ? 'Enabling Notifications...' : 'Turn On Notifications 🔔'}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFirstTimeModal(false);
+                    localStorage.setItem('seen_notif_modal', 'true');
+                  }}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 py-2 w-full transition-colors cursor-pointer"
+                >
+                  Not Now
+                </button>
+              </div>
             </div>
           </div>
         )}
