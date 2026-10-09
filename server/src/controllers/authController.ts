@@ -178,6 +178,9 @@ export const testPushNotification = async (req: any, res: Response, next: NextFu
           body: 'Push notifications are working perfectly on this device!',
           icon: '/favicon.ico',
           badge: '/favicon.ico',
+          vibrate: [200, 100, 200],
+          requireInteraction: true,
+          tag: 'stagelink_test_push',
         },
         fcmOptions: {
           link: '/dashboard/messages',

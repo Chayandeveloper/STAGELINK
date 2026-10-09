@@ -59,6 +59,7 @@ export class NotificationService {
           type: 'chat_message',
           conversationId: String(conversationId),
           senderName: String(senderName || ''),
+          messageText: String(bodyPreview || ''),
           click_action: `/dashboard/messages`,
         },
         webpush: {
@@ -67,6 +68,9 @@ export class NotificationService {
             body: bodyPreview,
             icon: '/favicon.ico',
             badge: '/favicon.ico',
+            vibrate: [200, 100, 200],
+            requireInteraction: true,
+            tag: `chat_${conversationId}`,
           },
           fcmOptions: {
             link: `/dashboard/messages`,

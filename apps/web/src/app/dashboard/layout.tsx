@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus, Home, HeartHandshake } from 'lucide-react';
+import { LayoutDashboard, Music, Calendar, Settings, MessageSquare, LogOut, Star, UserCircle, Search, Send, CalendarCheck, Image, PlusCircle, Briefcase, Users, Store, MapPin, ReceiptText, Menu, X, UserPlus, Home, HeartHandshake, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -17,6 +17,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isMounted, setIsMounted] = useState(false);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [enablingNotifications, setEnablingNotifications] = useState(false);
+  const [foregroundToast, setForegroundToast] = useState<{ title: string; body: string; url: string } | null>(null);
+
+  const playNotificationChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.45);
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (foregroundToast) {
+      const timer = setTimeout(() => setForegroundToast(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [foregroundToast]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -32,14 +59,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       // Listen for foreground notifications when tab is open
       const unsubscribe = setupForegroundListener((payload) => {
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-          const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
-          const body = payload.notification?.body || 'You received a new message';
-          new Notification(title, {
-            body,
-            icon: '/favicon.ico',
+        const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
+        const body = payload.notification?.body || payload.data?.messageText || 'You received a new message';
+        const targetUrl = payload.data?.click_action || '/dashboard/messages';
+
+        // 1. Play audio chime
+        playNotificationChime();
+
+        // 2. Trigger native OS notification via Service Worker
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator && Notification.permission === 'granted') {
+          navigator.serviceWorker.ready.then((reg) => {
+            reg.showNotification(title, {
+              body,
+              icon: '/favicon.ico',
+              badge: '/favicon.ico',
+              vibrate: [200, 100, 200],
+              requireInteraction: true,
+              tag: 'stagelink_foreground',
+              data: { url: targetUrl },
+            } as any);
+          }).catch(() => {
+            try {
+              new Notification(title, { body, icon: '/favicon.ico' });
+            } catch {}
           });
         }
+
+        // 3. Show prominent in-app toast
+        setForegroundToast({ title, body, url: targetUrl });
       });
 
       return () => {
@@ -237,6 +284,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setShowNotificationPrompt(false)}
                 className="text-zinc-400 hover:text-white p-1 rounded-full cursor-pointer"
                 aria-label="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Real-time In-App Notification Toast */}
+        {foregroundToast && (
+          <div className="fixed top-4 right-4 z-[9999] max-w-sm w-full bg-zinc-900/95 border border-indigo-500/50 rounded-2xl shadow-2xl shadow-indigo-950/80 p-4 backdrop-blur-xl animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-start justify-between gap-3">
+              <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl shrink-0">
+                <Bell className="w-5 h-5 animate-bounce" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-white text-sm truncate">{foregroundToast.title}</h4>
+                <p className="text-zinc-300 text-xs mt-0.5 line-clamp-2">{foregroundToast.body}</p>
+                <div className="mt-2.5 flex items-center gap-2">
+                  <Link
+                    href={foregroundToast.url}
+                    onClick={() => setForegroundToast(null)}
+                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg transition"
+                  >
+                    View Message
+                  </Link>
+                  <button
+                    onClick={() => setForegroundToast(null)}
+                    className="text-xs text-zinc-400 hover:text-white px-2 py-1.5"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => setForegroundToast(null)}
+                className="text-zinc-400 hover:text-white p-1 rounded-lg"
               >
                 <X size={16} />
               </button>

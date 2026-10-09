@@ -28,36 +28,68 @@ const firebaseConfig = {
   appId: urlParams.get('appId') || '1:436377211293:web:fd78167823784a6ebbdf74',
 };
 
-// Initialize if config exists
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+// Initialize Firebase in Service Worker
+try {
+  if (!firebase.apps || !firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const messaging = firebase.messaging();
+
+  messaging.onBackgroundMessage((payload) => {
+    console.log('[firebase-messaging-sw.js] Received background message:', payload);
+    const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
+    const body = payload.notification?.body || payload.data?.messageText || 'You have a new message';
+    const icon = payload.notification?.icon || '/favicon.ico';
+    const data = payload.data || {};
+
+    self.registration.showNotification(title, {
+      body,
+      icon,
+      badge: '/favicon.ico',
+      vibrate: [200, 100, 200],
+      requireInteraction: true,
+      tag: data.conversationId ? `chat_${data.conversationId}` : 'stagelink_push',
+      renotify: true,
+      data: {
+        url: data.click_action || '/dashboard/messages',
+        conversationId: data.conversationId,
+      },
+    });
+  });
+} catch (err) {
+  console.warn('[firebase-messaging-sw.js] Init error:', err);
+}
+
+// Fallback native push listener for guaranteed OS display
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
   try {
-    if (!firebase.apps || !firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const messaging = firebase.messaging();
+    const payload = event.data.json();
+    console.log('[firebase-messaging-sw.js] Native push event:', payload);
+    const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
+    const body = payload.notification?.body || payload.data?.messageText || 'You have a new message';
+    const data = payload.data || {};
 
-    messaging.onBackgroundMessage((payload) => {
-      console.log('[firebase-messaging-sw.js] Received background message:', payload);
-      const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
-      const body = payload.notification?.body || 'You have a new message';
-      const icon = payload.notification?.icon || '/favicon.ico';
-      const data = payload.data || {};
-
+    event.waitUntil(
       self.registration.showNotification(title, {
         body,
-        icon,
+        icon: '/favicon.ico',
         badge: '/favicon.ico',
         vibrate: [200, 100, 200],
+        requireInteraction: true,
+        tag: data.conversationId ? `chat_${data.conversationId}` : 'stagelink_push',
+        renotify: true,
         data: {
           url: data.click_action || '/dashboard/messages',
           conversationId: data.conversationId,
         },
-      });
-    });
-  } catch (err) {
-    console.warn('[firebase-messaging-sw.js] Init error:', err);
+      })
+    );
+  } catch (e) {
+    // Handled by onBackgroundMessage
   }
-}
+});
 
 // Handle notification click to focus or open chat window
 self.addEventListener('notificationclick', (event) => {

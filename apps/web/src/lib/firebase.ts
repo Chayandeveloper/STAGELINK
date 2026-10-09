@@ -73,17 +73,15 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     const firebaseAppInstance = getFirebaseApp();
     if (!firebaseAppInstance) return null;
 
-    // Register service worker with config parameters
-    const swUrl = `/firebase-messaging-sw.js?apiKey=${encodeURIComponent(firebaseConfig.apiKey || '')}&projectId=${encodeURIComponent(firebaseConfig.projectId || '')}&messagingSenderId=${encodeURIComponent(firebaseConfig.messagingSenderId || '')}&appId=${encodeURIComponent(firebaseConfig.appId || '')}`;
+    // Always register/update service worker with latest configuration to bypass stale caches
+    const swUrl = `/firebase-messaging-sw.js?v=4&apiKey=${encodeURIComponent(firebaseConfig.apiKey || '')}&projectId=${encodeURIComponent(firebaseConfig.projectId || '')}&messagingSenderId=${encodeURIComponent(firebaseConfig.messagingSenderId || '')}&appId=${encodeURIComponent(firebaseConfig.appId || '')}`;
     
-    // Register if not registered
-    let swRegistration = await navigator.serviceWorker.getRegistration('/');
-    if (!swRegistration) {
-      swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
-    }
+    const swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
+    try {
+      await swRegistration.update();
+    } catch {}
 
-    // CRITICAL FIX: Wait for the Service Worker to be fully active and ready
-    // Prevents: "AbortError: Failed to execute 'subscribe' on 'PushManager': Subscription failed - no active Service Worker"
+    // CRITICAL: Wait for the Service Worker to be fully active and ready
     const activeRegistration = await navigator.serviceWorker.ready;
 
     messagingInstance = getMessaging(firebaseAppInstance);
