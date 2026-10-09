@@ -77,9 +77,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const currentUserId = useAuthStore.getState().user?._id;
       const isMe = currentUserId && (message.sender?._id === currentUserId || (message as any).sender === currentUserId);
 
-      // Play chime if message came from another user
+      // Play chime if message came from another user AND (either we are in another conversation OR tab is not visible)
       if (!isMe) {
-        soundManager.playNotificationSound();
+        const isCurrentChatOpen = state.activeConversation === message.conversationId;
+        const isTabVisible = typeof document !== 'undefined' && !document.hidden;
+
+        // Only play notification sound if this chat is NOT actively open on screen
+        if (!isCurrentChatOpen || !isTabVisible) {
+          soundManager.playNotificationSound();
+        }
       }
 
       if (isMe) {
@@ -210,6 +216,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     // Join new room
     if (id && socket) {
       socket.emit('join_conversation', id);
+    }
+
+    // Notify Service Worker to suppress OS notifications for this conversation
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SET_ACTIVE_CONVERSATION',
+        conversationId: id,
+      });
     }
 
     set({ 

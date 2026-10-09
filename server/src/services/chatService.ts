@@ -1,6 +1,7 @@
 import { Conversation } from '../models/Conversation';
 import { Message } from '../models/Message';
 import { NotificationService } from './notificationService';
+import { isUserActiveInConversation } from '../sockets';
 import mongoose from 'mongoose';
 
 export class ChatService {
@@ -99,6 +100,12 @@ export class ChatService {
       conv.participants.forEach((p) => {
         const pIdStr = p.toString();
         if (pIdStr !== senderId) {
+          // If the recipient currently has this chat actively open, do not send push notification
+          if (isUserActiveInConversation(pIdStr, conversationId)) {
+            console.log(`ℹ️ [Push] Skipped push notification: Recipient ${pIdStr} has conversation ${conversationId} actively open.`);
+            return;
+          }
+
           NotificationService.sendChatPushNotification({
             recipientId: pIdStr,
             senderName,

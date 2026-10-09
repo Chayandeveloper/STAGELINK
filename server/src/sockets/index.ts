@@ -24,6 +24,14 @@ export const getIO = () => {
   return io;
 };
 
+export const isUserActiveInConversation = (userId: string, conversationId: string): boolean => {
+  if (!io) return false;
+  const socketId = connectedUsers.get(userId);
+  if (!socketId) return false;
+  const room = io.sockets.adapter.rooms.get(conversationId);
+  return room ? room.has(socketId) : false;
+};
+
 export const initSocket = (server: http.Server) => {
   io = new Server(server, {
     cors: {

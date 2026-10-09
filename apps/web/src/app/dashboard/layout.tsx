@@ -43,6 +43,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       // Listen for foreground notifications when tab is open
       const unsubscribe = setupForegroundListener((payload) => {
+        const notifConversationId = payload.data?.conversationId;
+        const activeConv = useChatStore.getState().activeConversation;
+        const isCurrentChatOpen = activeConv && notifConversationId && activeConv === notifConversationId;
+        const isTabVisible = typeof document !== 'undefined' && !document.hidden;
+
+        // If the user currently has this exact conversation open on screen, DO NOT show notification!
+        if (isCurrentChatOpen && isTabVisible) {
+          return;
+        }
+
         const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
         const body = payload.notification?.body || payload.data?.messageText || 'You received a new message';
         const targetUrl = payload.data?.click_action || '/dashboard/messages';
