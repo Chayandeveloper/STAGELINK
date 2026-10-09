@@ -15,7 +15,7 @@ self.addEventListener('activate', (event) => {
 const urlParams = new URLSearchParams(location.search);
 
 const firebaseConfig = {
-  apiKey: urlParams.get('apiKey') || 'AIzaSyBSwAIe-ivFoFVWHk2JDsRbL-l_UydAtOE',
+  apiKey: urlParams.get('apiKey') || 'AIzaSyBSwAle-ivFoFVWHk2JDsRbL-l_UydAtOE',
   authDomain: urlParams.get('authDomain') || 'stagelink-39606.firebaseapp.com',
   projectId: urlParams.get('projectId') || 'stagelink-39606',
   storageBucket: urlParams.get('storageBucket') || 'stagelink-39606.firebasestorage.app',

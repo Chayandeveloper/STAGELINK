@@ -3,7 +3,7 @@ import { getMessaging, getToken, isSupported, onMessage, type Messaging } from '
 import api from './api';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBSwAIe-ivFoFVWHk2JDsRbL-l_UydAtOE',
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBSwAle-ivFoFVWHk2JDsRbL-l_UydAtOE',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'stagelink-39606.firebaseapp.com',
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'stagelink-39606',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'stagelink-39606.firebasestorage.app',
