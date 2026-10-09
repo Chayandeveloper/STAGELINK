@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useChatStore } from '@/store/useChatStore';
-import { Send, Volume2, VolumeX, Smile, Camera, Image as ImageIcon } from 'lucide-react';
+import { Send, Smile, Camera, Image as ImageIcon, Heart } from 'lucide-react';
 import { CameraModal } from './CameraModal';
 import { ImagePreviewModal } from './ImagePreviewModal';
 import { compressImage } from '@/lib/imageUtils';
@@ -19,15 +19,15 @@ export function ChatInput({ conversationId }: Props) {
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
-  const { sendMessage, sendImageMessage, socket, soundEnabled, toggleSound } = useChatStore();
+  const { sendMessage, sendImageMessage, socket } = useChatStore();
 
-  // Auto-resize textarea smoothly
+  // Auto-resize textarea smoothly (compact Instagram style)
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 140);
-      textarea.style.height = `${Math.max(newHeight, 46)}px`;
+      const newHeight = Math.min(textarea.scrollHeight, 100);
+      textarea.style.height = `${Math.max(newHeight, 22)}px`;
     }
   }, [content]);
 
@@ -72,9 +72,14 @@ export function ChatInput({ conversationId }: Props) {
 
     // Keep focus and reset height
     if (textareaRef.current) {
-      textareaRef.current.style.height = '46px';
+      textareaRef.current.style.height = '22px';
       textareaRef.current.focus();
     }
+  };
+
+  // Handle quick heart like Instagram DM
+  const handleSendHeart = () => {
+    sendMessage(conversationId, '❤️');
   };
 
   // Handle photo picked from gallery/files
@@ -88,7 +93,6 @@ export function ChatInput({ conversationId }: Props) {
     } catch (err) {
       console.error('Failed to process image file:', err);
     } finally {
-      // Reset input value so user can select the same image again if desired
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -109,46 +113,20 @@ export function ChatInput({ conversationId }: Props) {
     };
   }, [conversationId, socket]);
 
+  const hasText = content.trim().length > 0;
+
   return (
     <>
-      <div className="p-3 sm:p-4 bg-zinc-950/80 backdrop-blur-xl border-t border-white/10 shrink-0 z-20">
-        <form onSubmit={handleSend} className="flex items-end gap-1.5 sm:gap-2 max-w-4xl mx-auto">
-          {/* Sound chime toggle */}
-          <button
-            type="button"
-            onClick={toggleSound}
-            title={soundEnabled ? 'Mute notification sound' : 'Unmute notification sound'}
-            className={`p-2.5 rounded-full transition-all duration-200 flex-shrink-0 ${
-              soundEnabled
-                ? 'text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20'
-                : 'text-zinc-500 hover:text-zinc-300 bg-white/5 hover:bg-white/10'
-            }`}
-          >
-            {soundEnabled ? (
-              <Volume2 className="w-4 h-4" />
-            ) : (
-              <VolumeX className="w-4 h-4" />
-            )}
-          </button>
-
-          {/* Instagram Camera Button */}
+      <div className="px-3 py-2 sm:px-4 sm:py-2.5 bg-zinc-950/95 backdrop-blur-xl border-t border-white/5 shrink-0 z-20">
+        <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto w-full">
+          {/* Instagram Left Camera Button */}
           <button
             type="button"
             onClick={() => setIsCameraOpen(true)}
-            title="Take photo with Camera (Instagram style)"
-            className="p-2.5 rounded-full text-pink-400 hover:text-pink-300 bg-pink-500/10 hover:bg-pink-500/20 transition-all duration-200 flex-shrink-0 active:scale-95"
+            title="Camera"
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-all cursor-pointer"
           >
             <Camera className="w-4 h-4" />
-          </button>
-
-          {/* Gallery / Photos Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            title="Share photo from gallery"
-            className="p-2.5 rounded-full text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 transition-all duration-200 flex-shrink-0 active:scale-95"
-          >
-            <ImageIcon className="w-4 h-4" />
           </button>
 
           {/* Hidden File Input for Gallery */}
@@ -160,8 +138,8 @@ export function ChatInput({ conversationId }: Props) {
             onChange={handleFileSelect}
           />
 
-          {/* Message Text Input */}
-          <div className="flex-1 relative flex items-center min-w-0">
+          {/* Instagram Center Capsule Pill */}
+          <div className="flex-1 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800/80 focus-within:border-zinc-700 rounded-full px-3.5 py-1.5 flex items-center gap-1.5 sm:gap-2 transition-all min-h-[40px]">
             <textarea
               ref={textareaRef}
               value={content}
@@ -172,14 +150,25 @@ export function ChatInput({ conversationId }: Props) {
                   handleSend();
                 }
               }}
-              placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-              className="w-full bg-white/5 hover:bg-white/[0.07] focus:bg-white/[0.08] border border-white/10 focus:border-indigo-500/50 rounded-2xl pl-3.5 sm:pl-4 pr-9 sm:pr-10 py-2.5 text-sm text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500/30 resize-none transition-all duration-150 leading-relaxed min-h-[46px] max-h-[140px]"
+              placeholder="Message..."
               rows={1}
+              className="flex-1 bg-transparent border-0 text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none leading-relaxed py-1 px-1 min-h-[22px] max-h-[100px]"
             />
 
+            {/* Gallery Photo Button (inside pill) */}
             <button
               type="button"
-              className="absolute right-2.5 sm:right-3 text-zinc-500 hover:text-zinc-300 transition-colors p-1"
+              onClick={() => fileInputRef.current?.click()}
+              title="Photos & Gallery"
+              className="text-zinc-400 hover:text-white p-1 rounded-full transition-colors shrink-0 active:scale-90 cursor-pointer"
+            >
+              <ImageIcon className="w-4 h-4" />
+            </button>
+
+            {/* Emoji Button (inside pill) */}
+            <button
+              type="button"
+              className="text-zinc-400 hover:text-white p-1 rounded-full transition-colors shrink-0 active:scale-90 cursor-pointer"
               title="Emoji"
               onClick={() => setContent((prev) => prev + ' 😊')}
             >
@@ -187,15 +176,25 @@ export function ChatInput({ conversationId }: Props) {
             </button>
           </div>
 
-          {/* Send Button */}
-          <button
-            type="submit"
-            disabled={!content.trim()}
-            title="Send message"
-            className="p-3 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-full transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(99,102,241,0.35)] active:scale-95 flex-shrink-0"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+          {/* Right Action: Send Button when typing, Heart when empty (like Instagram DM) */}
+          {hasText ? (
+            <button
+              type="submit"
+              title="Send message"
+              className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all cursor-pointer animate-in zoom-in-75 duration-150"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSendHeart}
+              title="Send a like"
+              className="w-9 h-9 rounded-full text-zinc-400 hover:text-pink-500 hover:bg-pink-500/10 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer"
+            >
+              <Heart className="w-5 h-5 fill-pink-500/30 text-pink-500" />
+            </button>
+          )}
         </form>
       </div>
 

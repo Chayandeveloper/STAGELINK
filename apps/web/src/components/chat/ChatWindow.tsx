@@ -291,7 +291,7 @@ export function ChatWindow({ userId }: Props) {
       {showScrollBottom && (
         <button
           onClick={() => scrollToBottom('smooth')}
-          className="absolute bottom-20 right-6 z-20 flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-3.5 py-2 rounded-full shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 animate-in fade-in slide-in-from-bottom-3"
+          className="absolute bottom-16 right-5 z-20 flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-3.5 py-1.5 rounded-full shadow-lg hover:shadow-indigo-500/25 transition-all duration-200 animate-in fade-in slide-in-from-bottom-3"
         >
           <ArrowDown className="w-3.5 h-3.5" />
           <span>New messages</span>
