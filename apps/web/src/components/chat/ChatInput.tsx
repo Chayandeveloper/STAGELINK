@@ -117,16 +117,16 @@ export function ChatInput({ conversationId }: Props) {
 
   return (
     <>
-      <div className="px-3 py-2 sm:px-4 sm:py-2.5 bg-zinc-950/95 backdrop-blur-xl border-t border-white/5 shrink-0 z-20">
-        <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto w-full">
+      <div className="w-full bg-zinc-950/95 backdrop-blur-xl border-t border-white/5 shrink-0 z-20 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+        <form onSubmit={handleSend} className="flex items-center gap-2 sm:gap-3 max-w-4xl mx-auto w-full min-w-0">
           {/* Instagram Left Camera Button */}
           <button
             type="button"
             onClick={() => setIsCameraOpen(true)}
             title="Camera"
-            className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-all cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-all cursor-pointer"
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </button>
 
           {/* Hidden File Input for Gallery */}
@@ -139,7 +139,7 @@ export function ChatInput({ conversationId }: Props) {
           />
 
           {/* Instagram Center Capsule Pill */}
-          <div className="flex-1 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800/80 focus-within:border-zinc-700 rounded-full px-3.5 py-1.5 flex items-center gap-1.5 sm:gap-2 transition-all min-h-[40px]">
+          <div className="flex-1 min-w-0 bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800/80 focus-within:border-zinc-700 rounded-full px-3 sm:px-3.5 py-1.5 flex items-center gap-1.5 sm:gap-2 transition-all min-h-[40px]">
             <textarea
               ref={textareaRef}
               value={content}
@@ -152,7 +152,7 @@ export function ChatInput({ conversationId }: Props) {
               }}
               placeholder="Message..."
               rows={1}
-              className="flex-1 bg-transparent border-0 text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none leading-relaxed py-1 px-1 min-h-[22px] max-h-[100px]"
+              className="flex-1 min-w-0 bg-transparent border-0 text-sm text-white placeholder:text-zinc-500 focus:outline-none resize-none leading-relaxed py-1 px-1 min-h-[22px] max-h-[100px]"
             />
 
             {/* Gallery Photo Button (inside pill) */}
@@ -160,7 +160,7 @@ export function ChatInput({ conversationId }: Props) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               title="Photos & Gallery"
-              className="text-zinc-400 hover:text-white p-1 rounded-full transition-colors shrink-0 active:scale-90 cursor-pointer"
+              className="text-zinc-400 hover:text-white p-1.5 rounded-full transition-colors shrink-0 active:scale-90 cursor-pointer"
             >
               <ImageIcon className="w-4 h-4" />
             </button>
@@ -168,7 +168,7 @@ export function ChatInput({ conversationId }: Props) {
             {/* Emoji Button (inside pill) */}
             <button
               type="button"
-              className="text-zinc-400 hover:text-white p-1 rounded-full transition-colors shrink-0 active:scale-90 cursor-pointer"
+              className="text-zinc-400 hover:text-white p-1.5 rounded-full transition-colors shrink-0 active:scale-90 cursor-pointer"
               title="Emoji"
               onClick={() => setContent((prev) => prev + ' 😊')}
             >
@@ -181,18 +181,18 @@ export function ChatInput({ conversationId }: Props) {
             <button
               type="submit"
               title="Send message"
-              className="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all cursor-pointer animate-in zoom-in-75 duration-150"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all cursor-pointer animate-in zoom-in-75 duration-150"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
           ) : (
             <button
               type="button"
               onClick={handleSendHeart}
               title="Send a like"
-              className="w-9 h-9 rounded-full text-zinc-400 hover:text-pink-500 hover:bg-pink-500/10 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full text-zinc-400 hover:text-pink-500 hover:bg-pink-500/10 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer"
             >
-              <Heart className="w-5 h-5 fill-pink-500/30 text-pink-500" />
+              <Heart className="w-5 h-5 fill-pink-500/30 text-pink-500 transition-transform active:scale-125" />
             </button>
           )}
         </form>

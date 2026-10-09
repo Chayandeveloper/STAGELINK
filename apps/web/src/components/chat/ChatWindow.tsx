@@ -129,7 +129,7 @@ export function ChatWindow({ userId }: Props) {
   return (
     <div className="flex-1 h-full min-h-0 overflow-hidden flex flex-col bg-zinc-950/70 backdrop-blur-xl relative">
       {/* Header */}
-      <div className="h-[74px] px-4 sm:px-6 border-b border-white/10 flex items-center justify-between bg-zinc-950/80 backdrop-blur-md z-10 w-full shrink-0">
+      <div className="h-[74px] px-4 sm:px-6 lg:px-8 border-b border-white/10 flex items-center justify-between bg-zinc-950/80 backdrop-blur-md z-10 w-full shrink-0 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Button
             variant="ghost"
@@ -195,7 +195,7 @@ export function ChatWindow({ userId }: Props) {
       <div 
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 lg:px-8 py-4 scroll-smooth"
+        className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 lg:px-8 py-4 scroll-smooth pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]"
       >
         <div className="flex flex-col min-h-full justify-end">
           {loadingMessages ? (
