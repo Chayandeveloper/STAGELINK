@@ -8,6 +8,7 @@ import {
   resetPassword,
   saveFcmToken,
   removeFcmToken,
+  testPushNotification,
 } from '../controllers/authController';
 import { protect } from '../middleware/authMiddleware';
 
@@ -21,5 +22,6 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.post('/fcm-token', protect, saveFcmToken);
 router.delete('/fcm-token', protect, removeFcmToken);
+router.post('/test-push', protect, testPushNotification);
 
 export default router;

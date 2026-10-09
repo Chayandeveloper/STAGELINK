@@ -3,23 +3,25 @@ import { getMessaging, getToken, isSupported, onMessage, type Messaging } from '
 import api from './api';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBSwAIe-ivFoFVWHk2JDsRbL-l_UydAtOE',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'stagelink-39606.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'stagelink-39606',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'stagelink-39606.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '436377211293',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:436377211293:web:fd78167823784a6ebbdf74',
 };
+
+const DEFAULT_VAPID_KEY = 'BHpp2oTt24GapvYQsSzcFBiVRwM9l7Gemb3A1S3YHESvgK9zg1zJKoohUnnokrJZjoYD0EpRioDxGx73RXEeGpM';
 
 let app: FirebaseApp | null = null;
 let messagingInstance: Messaging | null = null;
 
 export const isFirebaseConfigured = () => {
   return Boolean(
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
-    process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+    (process.env.NEXT_PUBLIC_FIREBASE_API_KEY || firebaseConfig.apiKey) &&
+    (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || firebaseConfig.projectId) &&
+    (process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId) &&
+    (process.env.NEXT_PUBLIC_FIREBASE_APP_ID || firebaseConfig.appId)
   );
 };
 
@@ -33,20 +35,27 @@ export const getFirebaseApp = () => {
   return app;
 };
 
+export const getNotificationPermissionState = (): NotificationPermission | 'unsupported' => {
+  if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
+  return Notification.permission;
+};
+
 /**
  * Request notification permission and register FCM device token with StageLink backend
  */
 export const requestNotificationPermission = async (): Promise<string | null> => {
   if (typeof window === 'undefined') return null;
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return null;
-  if (!isFirebaseConfigured()) {
-    console.log('ℹ️ Firebase credentials not configured in .env.local yet. Push notifications are in standby.');
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+    console.warn('Push notifications not supported in this browser.');
     return null;
   }
 
   try {
-    const supported = await isSupported();
-    if (!supported) return null;
+    const supported = await isSupported().catch(() => false);
+    if (!supported) {
+      console.warn('Firebase Messaging is not supported in this environment.');
+      return null;
+    }
 
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
@@ -57,25 +66,35 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     const firebaseAppInstance = getFirebaseApp();
     if (!firebaseAppInstance) return null;
 
-    // Register service worker with config query parameters
+    // Register service worker with config parameters
     const swUrl = `/firebase-messaging-sw.js?apiKey=${encodeURIComponent(firebaseConfig.apiKey || '')}&projectId=${encodeURIComponent(firebaseConfig.projectId || '')}&messagingSenderId=${encodeURIComponent(firebaseConfig.messagingSenderId || '')}&appId=${encodeURIComponent(firebaseConfig.appId || '')}`;
-    const swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
+    
+    // Register if not registered
+    let swRegistration = await navigator.serviceWorker.getRegistration('/');
+    if (!swRegistration) {
+      swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
+    }
+
+    // CRITICAL FIX: Wait for the Service Worker to be fully active and ready
+    // Prevents: "AbortError: Failed to execute 'subscribe' on 'PushManager': Subscription failed - no active Service Worker"
+    const activeRegistration = await navigator.serviceWorker.ready;
 
     messagingInstance = getMessaging(firebaseAppInstance);
 
-    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+    const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY || DEFAULT_VAPID_KEY;
     const currentToken = await getToken(messagingInstance, {
-      vapidKey: vapidKey || undefined,
-      serviceWorkerRegistration: swRegistration,
+      vapidKey,
+      serviceWorkerRegistration: activeRegistration,
     });
 
     if (currentToken) {
-      const storedToken = localStorage.getItem('fcm_token');
-      // Sync with server if token is new or not recorded
-      if (storedToken !== currentToken) {
+      // Always ensure backend has the token registered
+      try {
         await api.post('/auth/fcm-token', { token: currentToken });
         localStorage.setItem('fcm_token', currentToken);
-        console.log('🔥 FCM Device Token registered successfully');
+        console.log('🔥 FCM Device Token registered and synced with server successfully');
+      } catch (err) {
+        console.warn('Failed to sync FCM token with server:', err);
       }
       return currentToken;
     } else {

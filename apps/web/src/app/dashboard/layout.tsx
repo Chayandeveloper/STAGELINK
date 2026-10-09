@@ -15,13 +15,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, logout } = useAuthStore();
   const activeConversation = useChatStore((state) => state.activeConversation);
   const [isMounted, setIsMounted] = useState(false);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [enablingNotifications, setEnablingNotifications] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
 
     if (user) {
-      // Request permission and sync device FCM token with backend
-      requestNotificationPermission();
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+          setShowNotificationPrompt(true);
+        } else if (Notification.permission === 'granted') {
+          requestNotificationPermission();
+        }
+      }
 
       // Listen for foreground notifications when tab is open
       const unsubscribe = setupForegroundListener((payload) => {
@@ -40,6 +47,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       };
     }
   }, [user]);
+
+  const handleEnableNotifications = async () => {
+    setEnablingNotifications(true);
+    try {
+      const token = await requestNotificationPermission();
+      if (token || (typeof window !== 'undefined' && Notification.permission === 'granted')) {
+        setShowNotificationPrompt(false);
+      }
+    } finally {
+      setEnablingNotifications(false);
+    }
+  };
 
   const isMessagesPage = isMounted && pathname === '/dashboard/messages';
   const isChatActiveOnMobile = isMessagesPage && activeConversation;
@@ -197,6 +216,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <main className={`flex-1 flex flex-col min-w-0 h-full ${(isAudience || isVenue || isPerformer) && !isChatActiveOnMobile ? 'pb-16 lg:pb-0' : ''}`}>
+        {showNotificationPrompt && (
+          <div className="bg-gradient-to-r from-indigo-950 via-purple-950/70 to-indigo-950 border-b border-indigo-500/30 px-4 py-2 flex items-center justify-between text-xs sm:text-sm text-indigo-100 shrink-0 z-30">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🔔</span>
+              <span>
+                <strong className="font-semibold text-white">Enable Notifications:</strong> Get real-time alerts for incoming messages and gig updates.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleEnableNotifications}
+                disabled={enablingNotifications}
+                className="h-7 px-3 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-full cursor-pointer shadow-lg shadow-indigo-600/30 shrink-0"
+              >
+                {enablingNotifications ? 'Enabling...' : 'Enable Now 🔔'}
+              </Button>
+              <button
+                onClick={() => setShowNotificationPrompt(false)}
+                className="text-zinc-400 hover:text-white p-1 rounded-full cursor-pointer"
+                aria-label="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
         {!isAudience && !isVenue && !isPerformer && !isChatActiveOnMobile && (
           <div className="lg:hidden p-4 flex items-center border-b border-zinc-800 bg-zinc-950">
             <button 

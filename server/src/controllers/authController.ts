@@ -130,3 +130,71 @@ export const removeFcmToken = async (req: any, res: Response, next: NextFunction
   }
 };
 
+export const testPushNotification = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { User } = require('../models/User');
+    const { getFirebaseApp } = require('../config/firebase');
+    const { getMessaging } = require('firebase-admin/messaging');
+
+    const user = await User.findById(userId).select('fcmTokens name');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.fcmTokens || user.fcmTokens.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No registered device tokens found for your account. Please click "Enable Notifications" first.',
+      });
+    }
+
+    const app = getFirebaseApp();
+    if (!app) {
+      return res.status(500).json({
+        success: false,
+        message: 'Firebase Admin is not configured on the server.',
+      });
+    }
+
+    const messaging = getMessaging(app);
+    const response = await messaging.sendEachForMulticast({
+      tokens: user.fcmTokens,
+      notification: {
+        title: 'StageLink Push Notification 🎉',
+        body: 'Push notifications are working perfectly on this device!',
+      },
+      data: {
+        type: 'test_notification',
+        click_action: '/dashboard/messages',
+      },
+      webpush: {
+        notification: {
+          title: 'StageLink Push Notification 🎉',
+          body: 'Push notifications are working perfectly on this device!',
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+        },
+        fcmOptions: {
+          link: '/dashboard/messages',
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+      tokensCount: user.fcmTokens.length,
+      message: `Successfully sent test notification to ${response.successCount} of ${user.fcmTokens.length} device(s)!`,
+    });
+  } catch (error: any) {
+    console.error('Error sending test push notification:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to send test push' });
+  }
+};
+

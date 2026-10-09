@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, Save, Heart, Flame, ShieldAlert, CheckCircle2, Loader2, Plus, Trash2, UtensilsCrossed } from 'lucide-react';
+import { Settings, Save, Heart, Flame, ShieldAlert, CheckCircle2, Loader2, Plus, Trash2, UtensilsCrossed, Bell, Send, AlertCircle, RefreshCw } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
+import { requestNotificationPermission, getNotificationPermissionState } from '@/lib/firebase';
 
 interface RewardTier {
   minBill: number;
@@ -27,8 +28,59 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' }>({ text: '', type: 'success' });
 
+  // Push notification testing state
+  const [permissionState, setPermissionState] = useState<string>('unknown');
+  const [hasToken, setHasToken] = useState<boolean>(false);
+  const [testingPush, setTestingPush] = useState<boolean>(false);
+  const [registeringPush, setRegisteringPush] = useState<boolean>(false);
+  const [pushResult, setPushResult] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+
   const user = useAuthStore(state => state.user);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPermissionState(getNotificationPermissionState());
+      setHasToken(Boolean(localStorage.getItem('fcm_token')));
+    }
+  }, []);
+
+  const handleRegisterDeviceToken = async () => {
+    setRegisteringPush(true);
+    setPushResult(null);
+    try {
+      const token = await requestNotificationPermission();
+      if (typeof window !== 'undefined') {
+        setPermissionState(getNotificationPermissionState());
+        setHasToken(Boolean(localStorage.getItem('fcm_token')));
+      }
+      if (token) {
+        setPushResult({ text: 'Device token registered and synced with server successfully!', type: 'success' });
+      } else {
+        setPushResult({
+          text: `Permission status: ${getNotificationPermissionState()}. Please ensure browser notifications are allowed.`,
+          type: 'error'
+        });
+      }
+    } catch (e: any) {
+      setPushResult({ text: e.message || 'Error registering device token', type: 'error' });
+    } finally {
+      setRegisteringPush(false);
+    }
+  };
+
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    setPushResult(null);
+    try {
+      const res = await api.post('/auth/test-push');
+      setPushResult({ text: res.data.message || 'Test push notification sent successfully!', type: 'success' });
+    } catch (e: any) {
+      setPushResult({ text: e.response?.data?.message || e.message || 'Failed to send test push notification', type: 'error' });
+    } finally {
+      setTestingPush(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -352,6 +404,99 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </form>
+
+      {/* Push Notification Diagnostics & Test Panel */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400">
+              <Bell className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white tracking-tight">
+                Push Notification System & Diagnostics
+              </h2>
+              <p className="text-zinc-400 text-sm">
+                Verify browser service worker, device registration tokens, and live push delivery to this device.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800">
+            <span className="text-xs text-zinc-400 uppercase font-semibold">Browser Permission</span>
+            <div className="mt-1 flex items-center gap-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                permissionState === 'granted'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : permissionState === 'denied'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              }`}>
+                {permissionState.toUpperCase()}
+              </span>
+              <span className="text-xs text-zinc-400">
+                {permissionState === 'granted' ? 'Notifications are permitted' : 'Needs user permission prompt'}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-zinc-950/60 border border-zinc-800">
+            <span className="text-xs text-zinc-400 uppercase font-semibold">Device FCM Token</span>
+            <div className="mt-1 flex items-center gap-2">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                hasToken
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              }`}>
+                {hasToken ? 'REGISTERED' : 'NOT RECORDED'}
+              </span>
+              <span className="text-xs text-zinc-400">
+                {hasToken ? 'FCM token synced in browser storage' : 'Click "Register Device" below'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {pushResult && (
+          <div className={`p-4 rounded-xl text-sm flex items-start gap-3 border ${
+            pushResult.type === 'success'
+              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+              : 'bg-red-950/40 border-red-500/40 text-red-300'
+          }`}>
+            {pushResult.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            )}
+            <span>{pushResult.text}</span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          <Button
+            type="button"
+            onClick={handleRegisterDeviceToken}
+            disabled={registeringPush}
+            variant="outline"
+            className="border-indigo-600/40 text-indigo-300 hover:bg-indigo-600/20 rounded-xl flex items-center gap-2"
+          >
+            {registeringPush ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            {registeringPush ? 'Registering...' : '1. Register / Re-sync Device Token'}
+          </Button>
+
+          <Button
+            type="button"
+            onClick={handleTestPush}
+            disabled={testingPush}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl flex items-center gap-2 font-medium shadow-lg shadow-indigo-600/20"
+          >
+            {testingPush ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {testingPush ? 'Sending Test Push...' : '2. Send Test Notification To Device'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

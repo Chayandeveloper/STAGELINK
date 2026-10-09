@@ -2,29 +2,40 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Config parameters passed via URL query or initialized with placeholder that gets configured
+// Ensure service worker activates immediately
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Config parameters passed via URL query or fallback to default project config
 const urlParams = new URLSearchParams(location.search);
 
 const firebaseConfig = {
-  apiKey: urlParams.get('apiKey') || undefined,
-  authDomain: urlParams.get('authDomain') || undefined,
-  projectId: urlParams.get('projectId') || undefined,
-  storageBucket: urlParams.get('storageBucket') || undefined,
-  messagingSenderId: urlParams.get('messagingSenderId') || undefined,
-  appId: urlParams.get('appId') || undefined,
+  apiKey: urlParams.get('apiKey') || 'AIzaSyBSwAIe-ivFoFVWHk2JDsRbL-l_UydAtOE',
+  authDomain: urlParams.get('authDomain') || 'stagelink-39606.firebaseapp.com',
+  projectId: urlParams.get('projectId') || 'stagelink-39606',
+  storageBucket: urlParams.get('storageBucket') || 'stagelink-39606.firebasestorage.app',
+  messagingSenderId: urlParams.get('messagingSenderId') || '436377211293',
+  appId: urlParams.get('appId') || '1:436377211293:web:fd78167823784a6ebbdf74',
 };
 
 // Initialize if config exists
 if (firebaseConfig.apiKey && firebaseConfig.projectId) {
   try {
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     const messaging = firebase.messaging();
 
     messaging.onBackgroundMessage((payload) => {
       console.log('[firebase-messaging-sw.js] Received background message:', payload);
       const title = payload.notification?.title || payload.data?.senderName || 'StageLink Message';
       const body = payload.notification?.body || 'You have a new message';
-      const icon = '/favicon.ico';
+      const icon = payload.notification?.icon || '/favicon.ico';
       const data = payload.data || {};
 
       self.registration.showNotification(title, {

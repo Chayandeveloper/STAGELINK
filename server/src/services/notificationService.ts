@@ -59,6 +59,12 @@ export class NotificationService {
           click_action: `/dashboard/messages`,
         },
         webpush: {
+          notification: {
+            title: senderName || 'StageLink Message',
+            body: bodyPreview,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+          },
           fcmOptions: {
             link: `/dashboard/messages`,
           },
