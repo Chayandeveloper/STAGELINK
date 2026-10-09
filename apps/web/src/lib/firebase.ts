@@ -2,8 +2,15 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported, onMessage, type Messaging } from 'firebase/messaging';
 import api from './api';
 
+const VALID_API_KEY = 'AIzaSyBSwAle-ivFoFVWHk2JDsRbL-l_UydAtOE';
+
+let configuredApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || VALID_API_KEY;
+if (configuredApiKey.includes('BSwAIe-') || configuredApiKey === 'AIzaSyBSwAIe-ivFoFVWHk2JDsRbL-l_UydAtOE') {
+  configuredApiKey = VALID_API_KEY;
+}
+
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBSwAle-ivFoFVWHk2JDsRbL-l_UydAtOE',
+  apiKey: configuredApiKey,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'stagelink-39606.firebaseapp.com',
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'stagelink-39606',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'stagelink-39606.firebasestorage.app',

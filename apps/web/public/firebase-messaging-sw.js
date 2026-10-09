@@ -14,8 +14,13 @@ self.addEventListener('activate', (event) => {
 // Config parameters passed via URL query or fallback to default project config
 const urlParams = new URLSearchParams(location.search);
 
+let activeApiKey = urlParams.get('apiKey');
+if (!activeApiKey || activeApiKey.includes('BSwAIe-') || activeApiKey === 'AIzaSyBSwAIe-ivFoFVWHk2JDsRbL-l_UydAtOE') {
+  activeApiKey = 'AIzaSyBSwAle-ivFoFVWHk2JDsRbL-l_UydAtOE';
+}
+
 const firebaseConfig = {
-  apiKey: urlParams.get('apiKey') || 'AIzaSyBSwAle-ivFoFVWHk2JDsRbL-l_UydAtOE',
+  apiKey: activeApiKey,
   authDomain: urlParams.get('authDomain') || 'stagelink-39606.firebaseapp.com',
   projectId: urlParams.get('projectId') || 'stagelink-39606',
   storageBucket: urlParams.get('storageBucket') || 'stagelink-39606.firebasestorage.app',
