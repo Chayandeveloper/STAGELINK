@@ -30,8 +30,11 @@ export class NotificationService {
 
       const recipient = await User.findById(recipientId).select('fcmTokens name');
       if (!recipient || !recipient.fcmTokens || recipient.fcmTokens.length === 0) {
+        console.log(`ℹ️ [Push] Skipped for user ${recipient?.name || recipientId}: User has no registered device tokens yet.`);
         return;
       }
+
+      console.log(`🚀 [Push] Sending push notification to ${recipient.name} (${recipient.fcmTokens.length} device(s))...`);
 
       let bodyPreview = messageText;
       if (messageType === 'image') {
@@ -73,6 +76,7 @@ export class NotificationService {
 
       const messaging = getMessaging(app);
       const response = await messaging.sendEachForMulticast(payload);
+      console.log(`✅ [Push] Notification delivered to ${response.successCount} of ${recipient.fcmTokens.length} device(s) for ${recipient.name}.`);
 
       // Clean up invalid/expired device tokens
       if (response.failureCount > 0) {
